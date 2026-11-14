@@ -20,6 +20,16 @@ static uint8_t default_framebuffer_storage[320 * 200];
 static WolfLegacyVideo *active_video;
 static bool default_video_initialised;
 
+static size_t legacy_image_size(int width, int height)
+{
+    if (width <= 0 || height <= 0 ||
+        (size_t)width > SIZE_MAX / (size_t)height) {
+        return 0;
+    }
+
+    return (size_t)width * (size_t)height;
+}
+
 static WolfLegacyVideo *get_video(void)
 {
     if (active_video == NULL) {
@@ -117,7 +127,7 @@ void VL_ClearVideo(uint8_t colour)
 
 void VL_SetLineWidth(unsigned width)
 {
-    if (width * 2u == WOLF_VGA_LEGACY_STRIDE_BYTES) {
+    if (width == WOLF_VGA_LEGACY_STRIDE_BYTES / 2u) {
         linewidth = WOLF_VGA_LEGACY_STRIDE_BYTES;
     }
 }
@@ -262,9 +272,11 @@ void VL_Bar(int x, int y, int width, int height, int colour)
 void VL_MungePic(uint8_t *source, unsigned width, unsigned height)
 {
     if (width <= INT_MAX && height <= INT_MAX) {
-        (void)wolf_legacy_video_munge_picture(
-            source, (size_t)width * (size_t)height,
-            (int)width, (int)height);
+        if ((size_t)width <= SIZE_MAX / (size_t)height) {
+            (void)wolf_legacy_video_munge_picture(
+                source, (size_t)width * (size_t)height,
+                (int)width, (int)height);
+        }
     }
 }
 
@@ -281,8 +293,7 @@ void VL_MemToLatch(
     if (video != NULL) {
         (void)wolf_legacy_video_mem_to_latch(
             video, destination, width, height,
-            source, (size_t)(width > 0 ? width : 0) *
-                (size_t)(height > 0 ? height : 0));
+            source, legacy_image_size(width, height));
     }
 }
 
@@ -298,8 +309,7 @@ void VL_MemToScreen(
 {
     (void)wolf_legacy_video_mem_to_screen(
         get_video(), x, y, width, height, source,
-        (size_t)(width > 0 ? width : 0) *
-            (size_t)(height > 0 ? height : 0));
+        legacy_image_size(width, height));
 }
 
 void VL_MaskedToScreen(
@@ -323,6 +333,9 @@ void VL_DrawTile8String(
 
         (void)wolf_legacy_video_mem_to_screen(
             video, x, y, 8, 8, glyph, 64);
+        if (x > INT_MAX - 8) {
+            break;
+        }
         x += 8;
         ++text;
     }
