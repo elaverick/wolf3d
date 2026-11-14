@@ -90,7 +90,7 @@ int main(int argc, char **argv)
     if (argc == 3 && strcmp(argv[1], "--frames") == 0) {
         frame_limit = atoi(argv[2]);
         if (frame_limit < 1) {
-            fputs("Frame limit must be positive.\\n", stderr);
+            fputs("Frame limit must be positive.\n", stderr);
             return 1;
         }
     }
