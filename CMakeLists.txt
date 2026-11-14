@@ -227,6 +227,16 @@ if(WOLF3D_BUILD_SDL3_PLATFORM)
                     wolf3d_platform
                     wolf3d_legacy_vl
             )
+
+            if(BUILD_TESTING)
+                add_test(
+                    NAME platform_smoke
+                    COMMAND wolf3d_platform_smoke --frames 2
+                )
+                set_tests_properties(platform_smoke PROPERTIES
+                    ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_RENDER_DRIVER=software"
+                )
+            endif()
         endif()
     else()
         message(STATUS "SDL3 was not found; the native platform targets are skipped.")
