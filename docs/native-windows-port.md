@@ -37,6 +37,8 @@ The portable video library currently provides:
   offsets, latch storage, drawing primitives and conversion of a selected page
   into a linear indexed framebuffer.
 - A C wall-post scaler that reproduces the original 16.16 fixed-point mapping.
+- A game-facing legacy video context that groups the planes, current drawing
+  and display pages, palette and linear presentation buffer.
 
 The VGA memory model is a compatibility layer, not a new renderer. It preserves
 the original planar memory model while removing port I/O, segmented pointers
@@ -57,6 +59,12 @@ The original VGA layout is represented explicitly:
 The image and latch copy functions currently require four-pixel-aligned
 destination X coordinates, matching the original picture and latch drawing
 paths. Pixel, line and rectangle operations accept pixel-aligned coordinates.
+
+The intended presentation sequence is:
+
+1. Draw into the current software VGA page through the legacy video context.
+2. Convert the selected display page to its 320x200 indexed framebuffer.
+3. Submit that framebuffer and its expanded RGB palette to the platform API.
 
 ## Build
 
@@ -84,19 +92,19 @@ GitHub Actions runs Release builds and CTest on Ubuntu and Windows, treating
 compiler warnings as errors. The Ubuntu job also runs an AddressSanitizer and
 UndefinedBehaviorSanitizer build. Tests cover framebuffer bounds and clipping,
 overlapping copies, image layout conversion, VGA plane addressing, original
-page offsets, latch copies, palette expansion and wall-post scaling against
-the original fixed-point algorithm.
+page offsets, latch copies, palette expansion, wall-post scaling against the
+original fixed-point algorithm, and the legacy video context.
 
 ## Next steps
 
-1. Connect the software VGA memory model to the original `VL_*` video API.
-2. Replace the VGA register and segmented-memory operations in the legacy
-   drawing code with calls into this compatibility layer.
-3. Translate sprite scaling and remaining assembly drawing routines into
+1. Connect the legacy video context to a drop-in replacement for the original
+   `VL_*` API and remove the DOS-specific implementation from the native build.
+2. Translate sprite scaling and remaining assembly drawing routines into
    readable C, preserving their original pixel output.
-4. Connect the selected display page and palette to SDL3 presentation.
-5. Port input, timing, audio, filesystem and memory management independently.
-6. Bring up the original game loop only after the renderer and resource loading
+3. Connect the selected display page and palette to SDL3 presentation in the
+   game loop.
+4. Port input, timing, audio, filesystem and memory management independently.
+5. Bring up the original game loop only after the renderer and resource loading
    paths build cleanly on a modern compiler.
 
 Do not copy SDL types into game headers. Do not introduce a second renderer
