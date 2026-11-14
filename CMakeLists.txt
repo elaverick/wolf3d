@@ -10,6 +10,21 @@ include(CTest)
 
 option(WOLF3D_BUILD_SDL3_PLATFORM "Build the native SDL3 platform layer" ON)
 option(WOLF3D_BUILD_PLATFORM_SMOKE_TEST "Build the SDL3 framebuffer smoke test" ON)
+add_library(wolf3d_native_compat STATIC
+    src/platform/native_compat.c
+)
+
+target_include_directories(wolf3d_native_compat
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/platform
+)
+
+if(MSVC)
+    target_compile_options(wolf3d_native_compat PRIVATE /W4 /WX)
+else()
+    target_compile_options(wolf3d_native_compat PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 option(WOLF3D_BUILD_LEGACY_GAME_OBJECTS "Compile portable original gameplay C sources" OFF)
 
 add_library(wolf3d_video STATIC
@@ -140,9 +155,14 @@ if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/WOLFSRC
             ${CMAKE_CURRENT_SOURCE_DIR}/src/video
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/platform
     )
     target_compile_definitions(wolf3d_game_objects PRIVATE WOLF3D_NATIVE)
-    target_link_libraries(wolf3d_game_objects PRIVATE wolf3d_legacy_vl)
+    target_link_libraries(wolf3d_game_objects
+        PRIVATE
+            wolf3d_legacy_vl
+            wolf3d_native_compat
+    )
 
     if(MSVC)
         target_compile_options(wolf3d_game_objects PRIVATE /W4)
