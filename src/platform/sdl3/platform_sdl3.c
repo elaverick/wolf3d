@@ -12,6 +12,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct WolfPlatform {
     SDL_Window *window;
