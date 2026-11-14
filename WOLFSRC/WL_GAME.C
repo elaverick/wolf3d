@@ -671,13 +671,13 @@ void SetupGameLevel (void)
 			{
 			// solid wall
 				tilemap[x][y] = tile;
-				(unsigned)actorat[x][y] = tile;
+				actorat[x][y] = (objtype *)(uintptr_t)tile;
 			}
 			else
 			{
 			// area floor
 				tilemap[x][y] = 0;
-				(unsigned)actorat[x][y] = 0;
+				actorat[x][y] = NULL;
 			}
 		}
 
@@ -734,7 +734,7 @@ void SetupGameLevel (void)
 			if (tile == AMBUSHTILE)
 			{
 				tilemap[x][y] = 0;
-				if ( (unsigned)actorat[x][y] == AMBUSHTILE)
+				if ( (uintptr_t)actorat[x][y] == AMBUSHTILE)
 					actorat[x][y] = NULL;
 
 				if (*map >= AREATILE)
@@ -1066,7 +1066,8 @@ void PlayDemo (int demonumber)
 	NewGame (1,0);
 	gamestate.mapon = *demoptr++;
 	gamestate.difficulty = gd_hard;
-	length = *((unsigned far *)demoptr)++;
+	length = *(unsigned far *)demoptr;
+	demoptr += sizeof(unsigned);
 	demoptr++;
 	lastdemoptr = demoptr-4+length;
 
