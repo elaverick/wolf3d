@@ -1292,9 +1292,9 @@ startplayloop:
 			SD_PlaySound(GETSPEARSND);
 			if (DigiMode != sds_Off)
 			{
-				long lasttimecount = TimeCount;
+				long lasttimecount = WOLF_GET_TIMECNT();
 
-				while(TimeCount < lasttimecount+150)
+				while(WOLF_GET_TIMECNT() < lasttimecount+150)
 				//while(DigiPlaying!=false)
 					SD_Poll();
 			}
