@@ -794,7 +794,7 @@ extern	int		mouseadjustment;
 // math tables
 //
 extern	int			pixelangle[MAXVIEWWIDTH];
-extern	long		far finetangent[FINEANGLES/4];
+extern	fixed	far finetangent[FINEANGLES/4];
 extern	fixed 		far sintable[],far *costable;
 
 //
@@ -992,7 +992,7 @@ extern	fixed	mindist;
 // math tables
 //
 extern	int			pixelangle[MAXVIEWWIDTH];
-extern	long		far finetangent[FINEANGLES/4];
+extern	fixed	far finetangent[FINEANGLES/4];
 extern	fixed 		far sintable[],far *costable;
 
 //
