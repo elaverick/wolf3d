@@ -29,11 +29,7 @@ extern	char		audioname[13];
 extern	byte 		_seg	*tinf;
 extern	int			mapon;
 
-#ifdef WOLF3D_NATIVE
-extern word *_seg mapsegs[MAPPLANES];
-#else
 extern unsigned _seg *mapsegs[MAPPLANES];
-#endif
 extern	maptype		_seg	*mapheaderseg[NUMMAPS];
 extern	byte		_seg	*audiosegs[NUMSNDCHUNKS];
 extern	void		_seg	*grsegs[NUMCHUNKS];
@@ -55,8 +51,8 @@ extern	char		extension[5],
 			afilename[10];
 
 #ifdef WOLF3D_NATIVE
-extern int32_t *_seg grstarts;
-extern int32_t *_seg audiostarts;
+extern int32_t _seg *grstarts;
+extern int32_t _seg *audiostarts;
 #else
 extern long *_seg grstarts;
 extern long *_seg audiostarts;
@@ -89,7 +85,7 @@ long CA_RLEWCompress (unsigned huge *source, long length, unsigned huge *dest,
   unsigned rlewtag);
 
 #ifdef WOLF3D_NATIVE
-void CA_RLEWexpand (word huge *source, word huge *dest, long length, word rlewtag);
+void CA_RLEWexpand (word huge *source, unsigned huge *dest, long length, word rlewtag);
 #else
 void CA_RLEWexpand (unsigned huge *source, unsigned huge *dest,long length,
   unsigned rlewtag);

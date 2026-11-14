@@ -64,11 +64,7 @@ typedef struct
 byte 		_seg	*tinf;
 int			mapon;
 
-#ifdef WOLF3D_NATIVE
-word *_seg mapsegs[MAPPLANES];
-#else
 unsigned _seg *mapsegs[MAPPLANES];
-#endif
 maptype		_seg	*mapheaderseg[NUMMAPS];
 byte		_seg	*audiosegs[NUMSNDCHUNKS];
 void		_seg	*grsegs[NUMCHUNKS];
@@ -110,8 +106,8 @@ char extension[5],	// Need a string, not constant to change cache files
 void CA_CannotOpen(char *string);
 
 #ifdef WOLF3D_NATIVE
-int32_t *_seg *grstarts;
-int32_t *_seg *audiostarts;
+int32_t _seg *grstarts;
+int32_t _seg *audiostarts;
 #else
 long *_seg *grstarts;
 long *_seg *audiostarts;
@@ -746,7 +742,7 @@ void CAL_CarmackExpand (word far *source, word far *dest, unsigned length)
                 }
             }
         } else {
-            dest[produced++] = value;
+            dest[produced++] = (unsigned)value;
         }
     }
 }
@@ -876,17 +872,17 @@ long CA_RLEWCompress (unsigned huge *source, long length, unsigned huge *dest,
 */
 
 #ifdef WOLF3D_NATIVE
-void CA_RLEWexpand (word huge *source, word huge *dest, long length, word rlewtag)
+void CA_RLEWexpand (word huge *source, unsigned huge *dest, long length, word rlewtag)
 {
     size_t output_words;
     size_t produced = 0;
     const word *input = source;
 
-    if (source == NULL || dest == NULL || length < 0 || (length & 1) != 0) {
+    if (source == NULL || dest == NULL || length < 0 || (length % (long)sizeof(unsigned)) != 0) {
         Quit("CA_RLEWexpand: invalid native arguments");
         return;
     }
-    output_words = (size_t)length / sizeof(word);
+    output_words = (size_t)length / sizeof(unsigned);
     while (produced < output_words) {
         word value = *input++;
         if (value == rlewtag) {
@@ -1011,7 +1007,7 @@ asm	mov	ax,ss
 asm	mov	ds,ax
 
 }
-
+#endif
 
 
 /*
@@ -1179,7 +1175,11 @@ void CAL_SetupMapFile (void)
 //
 	for (i=0;i<MAPPLANES;i++)
 	{
+		#ifdef WOLF3D_NATIVE
+        MM_GetPtr (&(memptr)mapsegs[i],64*64*sizeof(unsigned));
+#else
 		MM_GetPtr (&(memptr)mapsegs[i],64*64*2);
+#endif
 		MM_SetLock (&(memptr)mapsegs[i],true);
 	}
 }
@@ -1688,7 +1688,11 @@ void CA_CacheMap (int mapnum)
 //
 // load the planes into the allready allocated buffers
 //
+#ifdef WOLF3D_NATIVE
+    size = 64 * 64 * (unsigned)sizeof(unsigned);
+#else
 	size = 64*64*2;
+#endif
 
 	for (plane = 0; plane<MAPPLANES; plane++)
 	{
@@ -1723,7 +1727,7 @@ void CA_CacheMap (int mapnum)
 #else
 		CAL_CarmackExpand (source, (unsigned far *)buffer2seg,expanded);
 #endif
-		CA_RLEWexpand (((word *)buffer2seg)+1,(word *)*dest,size,
+		CA_RLEWexpand (((word *)buffer2seg)+1,(unsigned *)*dest,size,
 		((mapfiletype _seg *)tinf)->RLEWtag);
 		MM_FreePtr (&buffer2seg);
 
@@ -1732,7 +1736,7 @@ void CA_CacheMap (int mapnum)
 		// unRLEW, skipping expanded length
 		//
 #ifdef WOLF3D_NATIVE
-        CA_RLEWexpand(source + 1, (word *)*dest, size,
+        CA_RLEWexpand(source + 1, (unsigned *)*dest, size,
             ((mapfiletype _seg *)tinf)->RLEWtag);
 #else
 		CA_RLEWexpand (source+1, *dest,size,
