@@ -94,9 +94,6 @@ typedef struct {
 		int x,y,amount,curpos,indent;
 		} CP_iteminfo;
 
-/* The original menu ABI passes an integer even to callbacks that ignore it. */
-#define CP_ROUTINE(function) ((void (*)(int))(function))
-
 typedef struct {
 		int active;
 		char string[36];
