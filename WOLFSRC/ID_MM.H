@@ -82,6 +82,9 @@ void MM_FreePtr (memptr *baseptr);
 
 void MM_SetPurge (memptr *baseptr, int purge);
 void MM_SetLock (memptr *baseptr, boolean locked);
+#ifdef WOLF3D_NATIVE
+void MM_Purge(void);
+#endif
 void MM_SortMem (void);
 
 void MM_ShowMemory (void);
