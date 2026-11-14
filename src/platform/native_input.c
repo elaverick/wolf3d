@@ -54,11 +54,10 @@ static void pump_platform_input(void)
     (void)wolf_platform_pump_events(NULL);
 
     while (wolf_platform_take_key_event(&scan_code)) {
-        if (scan_code > 0 && scan_code < NumCodes) {
+        if (scan_code == 0x7f) {
+            Paused = true;
+        } else if (scan_code > 0 && scan_code < NumCodes) {
             LastScan = (ScanCode)scan_code;
-            if (scan_code == 0x45) {
-                Paused = true;
-            }
             if (key_hook != NULL) {
                 key_hook();
             }
