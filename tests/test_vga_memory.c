@@ -274,6 +274,42 @@ static void test_wall_post_scaling(void)
         source, sizeof(source) - 1, 4, 8));
 }
 
+static void test_overlapping_page_copy(void)
+{
+    WolfVgaMemory memory;
+
+    memset(storage, 0, sizeof(storage));
+    assert(wolf_vga_memory_init(
+        &memory, storage, sizeof(storage), PLANE_SIZE, STRIDE, HEIGHT));
+
+    for (int plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        for (int row = 0; row < HEIGHT; ++row) {
+            for (int column = 0; column < STRIDE; ++column) {
+                memory.planes[plane][(size_t)row * STRIDE + column] =
+                    (uint8_t)(plane * 40 + row * 4 + column);
+            }
+        }
+    }
+
+    assert(wolf_vga_memory_copy_page(&memory, 0, 1, 2, 3));
+    for (int plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        assert(memory.planes[plane][1] == (uint8_t)(plane * 40));
+        assert(memory.planes[plane][2] == (uint8_t)(plane * 40 + 1));
+        assert(memory.planes[plane][STRIDE + 1] ==
+            (uint8_t)(plane * 40 + 4));
+    }
+
+    assert(wolf_vga_memory_copy_page(&memory, 1, 0, 2, 3));
+    for (int plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        assert(memory.planes[plane][0] == (uint8_t)(plane * 40));
+        assert(memory.planes[plane][1] == (uint8_t)(plane * 40 + 1));
+        assert(memory.planes[plane][STRIDE] == (uint8_t)(plane * 40 + 4));
+    }
+
+    assert(!wolf_vga_memory_copy_page(&memory, PLANE_SIZE, 0, 2, 2));
+    assert(!wolf_vga_memory_copy_page(&memory, 0, 0, STRIDE + 1, 2));
+}
+
 static void test_latch_memory(void)
 {
     WolfVgaMemory memory;
