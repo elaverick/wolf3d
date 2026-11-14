@@ -1593,7 +1593,11 @@ void    DemoLoop (void)
 
 char    *nosprtxt[] = {"nospr",nil};
 
+#ifdef WOLF3D_NATIVE
 void WolfMain (void)
+#else
+void main (void)
+#endif
 {
 	int     i;
 
