@@ -1106,31 +1106,27 @@ unsigned vgaCeiling[]=
 
 void VGAClearScreen (void)
 {
-	unsigned ceiling = vgaCeiling[gamestate.episode * 10 + mapon];
-
-#ifdef WOLF3D_NATIVE
-	int view_left = 0;
+	unsigned ceiling;
 	unsigned ceiling_index;
-	unsigned ceiling_colour;
 
 #ifdef SPEAR
 	ceiling_index = (unsigned)mapon;
 #else
 	ceiling_index = (unsigned)(gamestate.episode * 10 + mapon);
 #endif
-	ceiling_colour = 0x1d;
+	ceiling = 0x1d1d;
 	if (ceiling_index < sizeof(vgaCeiling) / sizeof(vgaCeiling[0])) {
-		ceiling_colour = vgaCeiling[ceiling_index] & 0xffu;
+		ceiling = vgaCeiling[ceiling_index];
 	}
 
+#ifdef WOLF3D_NATIVE
 	wolf_legacy_video_fill_rect(
-		VL_GetVideo(), view_left, 0, viewwidth, viewheight / 2,
-		(byte)ceiling_colour);
+		VL_GetVideo(), 0, 0, viewwidth, viewheight / 2,
+		(byte)(ceiling & 0xffu));
 	wolf_legacy_video_fill_rect(
-		VL_GetVideo(), view_left, viewheight / 2, viewwidth,
+		VL_GetVideo(), 0, viewheight / 2, viewwidth,
 		viewheight - viewheight / 2, 0x19);
 #else
-	unsigned ceiling = vgaCeiling[gamestate.episode * 10 + mapon];
 asm  mov  dx,SC_INDEX
 asm  mov  ax,SC_MAPMASK+15*256  // write through all planes
 asm  out  dx,ax
