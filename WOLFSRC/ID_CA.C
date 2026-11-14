@@ -1226,8 +1226,7 @@ void CAL_SetupAudioFile (void)
 
     header_length = filelength(header_handle);
     required_length = (long)(NUMSNDCHUNKS + 1) * (long)sizeof(int32_t);
-    if (header_length < required_length ||
-        (header_length % (long)sizeof(int32_t)) != 0) {
+    if (header_length != required_length) {
         close(header_handle);
         fprintf(stderr, "Invalid audio header (%s); continuing silently.\n", fname);
         return;
@@ -1368,6 +1367,11 @@ void CA_Shutdown (void)
 void CA_CacheAudioChunk (int chunk)
 {
 	long	pos,compressed;
+#ifdef WOLF3D_NATIVE
+    int64_t start_offset;
+    int64_t end_offset;
+    long audio_file_size;
+#endif
 #ifdef AUDIOHEADERLINKED
 	long	expanded;
 	memptr	bigbufferseg;
@@ -1388,11 +1392,28 @@ void CA_CacheAudioChunk (int chunk)
 // load the chunk into a buffer, either the miscbuffer if it fits, or allocate
 // a larger buffer
 //
+#ifdef WOLF3D_NATIVE
+    /*
+     * AUDIOHED contains signed 32-bit file offsets. Validate both endpoints
+     * before subtracting or allocating so corrupt offsets cannot overflow
+     * the signed length or trigger an unbounded allocation.
+     */
+    start_offset = audiostarts[chunk];
+    end_offset = audiostarts[chunk + 1];
+    audio_file_size = filelength(audiohandle);
+    if (audio_file_size < 0 || start_offset < 0 ||
+        end_offset <= start_offset || end_offset > audio_file_size) {
+        return;
+    }
+    pos = (long)start_offset;
+    compressed = (long)(end_offset - start_offset);
+#else
 	pos = audiostarts[chunk];
 	compressed = audiostarts[chunk+1]-pos;
     if (pos < 0 || compressed <= 0) {
         return;
     }
+#endif
 
 	if (lseek(audiohandle,pos,SEEK_SET) != pos) {
         return;
