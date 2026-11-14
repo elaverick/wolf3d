@@ -86,10 +86,13 @@ static void test_image_and_text_api(void)
     assert(framebuffer->pixels[15 * 320 + 15] == 0xaa);
 
     memset(glyph_planar, 0xbb, sizeof(glyph_planar));
-    VL_MemToLatch(
-        glyph_planar, 8, 8, WOLF_VGA_LEGACY_LATCH_OFFSET + 256);
-    VL_DrawLatch8String(
-        "A", WOLF_VGA_LEGACY_LATCH_OFFSET + 256, 16, 8);
+    {
+        unsigned atlas_offset = WOLF_VGA_LEGACY_LATCH_OFFSET + 256;
+        unsigned glyph_offset = atlas_offset + (unsigned)'A' * 16u;
+
+        VL_MemToLatch(glyph_planar, 8, 8, glyph_offset);
+        VL_DrawLatch8String("A", atlas_offset, 16, 8);
+    }
     assert(VL_Present());
     assert(framebuffer->pixels[8 * 320 + 16] == 0xbb);
     assert(framebuffer->pixels[15 * 320 + 23] == 0xbb);
