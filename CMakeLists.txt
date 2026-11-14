@@ -37,7 +37,7 @@ target_include_directories(wolf3d_native_runtime
         ${CMAKE_CURRENT_SOURCE_DIR}/src/video
 )
 
-target_compile_definitions(wolf3d_native_runtime PUBLIC WOLF3D_NATIVE)
+target_compile_definitions(wolf3d_native_runtime PUBLIC WOLF3D_NATIVE PRIVATE _CRT_SECURE_NO_WARNINGS)
 
 target_link_libraries(wolf3d_native_runtime
     PUBLIC
@@ -203,6 +203,7 @@ if(BUILD_TESTING)
     )
 
     target_link_libraries(test_native_runtime PRIVATE wolf3d_native_runtime)
+    target_compile_definitions(test_native_runtime PRIVATE _CRT_SECURE_NO_WARNINGS)
 
     if(MSVC)
         target_compile_options(test_native_runtime PRIVATE /W4 /WX)
