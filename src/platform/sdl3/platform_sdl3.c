@@ -256,13 +256,13 @@ bool wolf_platform_any_file_matches(const char *pattern)
             left = (const unsigned char *)entry_extension;
             right = (const unsigned char *)pattern_extension;
 
-            while (*left != '\\0' && *right != '\\0' &&
+            while (*left != '\0' && *right != '\0' &&
                    tolower(*left) == tolower(*right)) {
                 ++left;
                 ++right;
             }
 
-            if (*left == '\\0' && *right == '\\0') {
+            if (*left == '\0' && *right == '\0') {
                 closedir(directory);
                 return true;
             }
