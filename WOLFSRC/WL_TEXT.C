@@ -1,6 +1,8 @@
 // WL_TEXT.C
 
 #include "WL_DEF.H"
+
+extern void FreeMusic(void);
 #pragma	hdrstop
 
 /*
