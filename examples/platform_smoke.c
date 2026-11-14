@@ -23,6 +23,12 @@ static bool present_to_platform(
         platform, pixels, pitch, palette);
 }
 
+static void delay_video(uint32_t milliseconds, void *userdata)
+{
+    (void)userdata;
+    wolf_platform_delay_ms(milliseconds);
+}
+
 static void draw_test_scene(void)
 {
     uint8_t wall_column[64];
@@ -80,6 +86,8 @@ int main(void)
     VL_Startup();
     wolf_legacy_video_set_present_callback(
         VL_GetVideo(), present_to_platform, platform);
+    wolf_legacy_video_set_delay_callback(
+        VL_GetVideo(), delay_video, platform);
     VL_SetLineWidth(40);
     VL_SetScreen((int)WOLF_VGA_LEGACY_PAGE1_OFFSET, 0);
     bufferofs = WOLF_VGA_LEGACY_PAGE1_OFFSET;
