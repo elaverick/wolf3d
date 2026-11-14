@@ -194,14 +194,17 @@ static void test_copy_clipping(void)
 static void test_planar_blit_and_palette(void)
 {
     WolfFramebuffer framebuffer;
-    uint8_t planar[8] = {
-        0, 4,
-        1, 5,
-        2, 6,
-        3, 7
-    };
+    uint8_t planar[8] = {0, 1, 2, 3, 4, 5, 6, 7};
     uint8_t source_palette[256][3] = {{0}};
     uint8_t expanded_palette[256][3] = {{0}};
+
+    assert(wolf_image_chunky_to_planar4(planar, sizeof(planar), 4, 2));
+    assert(planar[0] == 0 && planar[1] == 4);
+    assert(planar[2] == 1 && planar[3] == 5);
+    assert(planar[4] == 2 && planar[5] == 6);
+    assert(planar[6] == 3 && planar[7] == 7);
+    assert(!wolf_image_chunky_to_planar4(planar, sizeof(planar), 3, 2));
+    assert(!wolf_image_chunky_to_planar4(planar, sizeof(planar) - 1, 4, 2));
 
     reset();
     assert(wolf_framebuffer_init(&framebuffer, WIDTH, HEIGHT, PITCH,
