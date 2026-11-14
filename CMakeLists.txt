@@ -28,6 +28,7 @@ endif()
 add_library(wolf3d_native_runtime STATIC
     src/platform/native_memory_manager.c
     src/platform/native_page_manager.c
+    src/platform/native_tick.c
     src/platform/native_map_codec.c
     src/platform/native_huffman.c
 )
@@ -182,6 +183,7 @@ if(BUILD_TESTING)
         tests/test_native_input.c
         src/platform/native_input.c
         src/platform/native_sound.c
+        src/platform/native_tick.c
     )
 
     target_include_directories(test_native_input
@@ -204,6 +206,7 @@ if(BUILD_TESTING)
     add_executable(test_native_sound
         tests/test_native_sound.c
         src/platform/native_sound.c
+        src/platform/native_tick.c
     )
 
     target_include_directories(test_native_sound
