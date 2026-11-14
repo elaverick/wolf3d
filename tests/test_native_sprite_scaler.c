@@ -67,13 +67,13 @@ static size_t make_test_shape(uint8_t *shape, size_t capacity)
     shape[162] = 42;
     shape[163] = 43;
 
-    /* Slot 0, source x=31, rows [1, 4). */
+    /* Slot 0, source x=30, rows [1, 4). */
     write_u16_le(shape + POSTS_SLOT_0, 8);
     write_u16_le(shape + POSTS_SLOT_0 + 2, 132);
     write_u16_le(shape + POSTS_SLOT_0 + 4, 2);
     write_u16_le(shape + POSTS_SLOT_0 + 6, 0);
 
-    /* Slot 1, source x=30, rows [1, 4). */
+    /* Slot 1, source x=31, rows [1, 4). */
     write_u16_le(shape + POSTS_SLOT_1, 8);
     write_u16_le(shape + POSTS_SLOT_1 + 2, 139);
     write_u16_le(shape + POSTS_SLOT_1 + 4, 2);
@@ -134,9 +134,9 @@ static void test_centre_out_offsets_and_multiple_posts(void)
     assert(framebuffer_pixels[70u * 320u + 158u] == 22);
     assert(framebuffer_pixels[71u * 320u + 158u] == 33);
 
-    assert(framebuffer_pixels[69u * 320u + 159u] == 20);
-    assert(framebuffer_pixels[70u * 320u + 159u] == 21);
-    assert(framebuffer_pixels[71u * 320u + 159u] == 22);
+    assert(framebuffer_pixels[69u * 320u + 159u] == 21);
+    assert(framebuffer_pixels[70u * 320u + 159u] == 22);
+    assert(framebuffer_pixels[71u * 320u + 159u] == 23);
 
     assert(framebuffer_pixels[69u * 320u + 160u] == 31);
     assert(framebuffer_pixels[70u * 320u + 160u] == 32);

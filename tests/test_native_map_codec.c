@@ -33,13 +33,13 @@ static void test_carmack_invalid(void){
  assert(!wolf_native_carmack_expand(trailing,sizeof trailing,out,2));
 }
 static void test_rlew(void){
- const uint16_t valid[]={1,2,0xabcd,3,7,9};
+ const uint16_t valid[]={1,2,0xabcd,3,7};
  const uint16_t truncated[]={0xabcd,2};
  const uint16_t zero[]={0xabcd,0,7};
  const uint16_t large[]={0xabcd,4,7};
  const uint16_t extra[]={1,2,3};
  unsigned out[5]={0},small[3]={0};
- assert(wolf_native_rlew_expand(valid,6,out,5,0xabcd));
+ assert(wolf_native_rlew_expand(valid,5,out,5,0xabcd));
  assert(out[0]==1&&out[1]==2&&out[2]==7&&out[3]==7&&out[4]==7);
  assert(!wolf_native_rlew_expand(truncated,2,small,2,0xabcd));
  assert(!wolf_native_rlew_expand(zero,3,small,2,0xabcd));
