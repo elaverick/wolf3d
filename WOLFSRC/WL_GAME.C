@@ -1351,7 +1351,7 @@ startplayloop:
 				#ifndef JAPAN
 				_fstrcpy(MainMenu[viewscores].string,STR_VS);
 				#endif
-				MainMenu[viewscores].routine = CP_ViewScores;
+				MainMenu[viewscores].routine = CP_ROUTINE(CP_ViewScores);
 				#pragma warn +sus
 
 				return;
@@ -1373,7 +1373,7 @@ startplayloop:
 				#ifndef JAPAN
 				_fstrcpy(MainMenu[viewscores].string,STR_VS);
 				#endif
-				MainMenu[viewscores].routine = CP_ViewScores;
+				MainMenu[viewscores].routine = CP_ROUTINE(CP_ViewScores);
 				#pragma warn +sus
 
 				return;
@@ -1445,7 +1445,7 @@ startplayloop:
 			#ifndef JAPAN
 			_fstrcpy(MainMenu[viewscores].string,STR_VS);
 			#endif
-			MainMenu[viewscores].routine = CP_ViewScores;
+			MainMenu[viewscores].routine = CP_ROUTINE(CP_ViewScores);
 			#pragma warn +sus
 
 			return;
@@ -1469,7 +1469,7 @@ startplayloop:
 			#ifndef JAPAN
 			_fstrcpy(MainMenu[viewscores].string,STR_VS);
 			#endif
-			MainMenu[viewscores].routine = CP_ViewScores;
+			MainMenu[viewscores].routine = CP_ROUTINE(CP_ViewScores);
 			#pragma warn +sus
 
 			return;
