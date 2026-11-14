@@ -11,6 +11,26 @@ include(CTest)
 option(WOLF3D_BUILD_SDL3_PLATFORM "Build the native SDL3 platform layer" ON)
 option(WOLF3D_BUILD_PLATFORM_SMOKE_TEST "Build the SDL3 framebuffer smoke test" ON)
 
+add_library(wolf3d_legacy_vl STATIC
+    src/video/legacy_vl.c
+)
+
+target_include_directories(wolf3d_legacy_vl
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video
+)
+
+target_link_libraries(wolf3d_legacy_vl
+    PUBLIC
+        wolf3d_video
+)
+
+if(MSVC)
+    target_compile_options(wolf3d_legacy_vl PRIVATE /W4 /WX)
+else()
+    target_compile_options(wolf3d_legacy_vl PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 add_library(wolf3d_video STATIC
     src/video/indexed_framebuffer.c
     src/video/vga_memory.c
@@ -79,6 +99,23 @@ if(BUILD_TESTING)
     endif()
 
     add_test(NAME legacy_video COMMAND test_legacy_video)
+
+    add_executable(test_legacy_vl
+        tests/test_legacy_vl.c
+    )
+
+    target_link_libraries(test_legacy_vl
+        PRIVATE
+            wolf3d_legacy_vl
+    )
+
+    if(MSVC)
+        target_compile_options(test_legacy_vl PRIVATE /W4 /WX)
+    else()
+        target_compile_options(test_legacy_vl PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
+    add_test(NAME legacy_vl COMMAND test_legacy_vl)
 endif()
 
 if(WOLF3D_BUILD_SDL3_PLATFORM)
