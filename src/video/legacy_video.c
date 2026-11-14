@@ -222,6 +222,144 @@ bool wolf_legacy_video_scale_post(
         destination_height);
 }
 
+void wolf_legacy_video_set_delay_callback(
+    WolfLegacyVideo *video,
+    WolfLegacyVideoDelayFn callback,
+    void *userdata)
+{
+    if (video == NULL) {
+        return;
+    }
+
+    video->delay_callback = callback;
+    video->delay_userdata = userdata;
+}
+
+void wolf_legacy_video_wait_vbl(WolfLegacyVideo *video, int vbls)
+{
+    uint64_t milliseconds;
+
+    if (video == NULL || video->delay_callback == NULL || vbls <= 0) {
+        return;
+    }
+
+    milliseconds = ((uint64_t)(unsigned)vbls * 1000u + 69u) / 70u;
+    if (milliseconds > UINT32_MAX) {
+        milliseconds = UINT32_MAX;
+    }
+
+    video->delay_callback((uint32_t)milliseconds, video->delay_userdata);
+}
+
+void wolf_legacy_video_fade_out(
+    WolfLegacyVideo *video,
+    int first_colour,
+    int last_colour,
+    int red,
+    int green,
+    int blue,
+    int steps)
+{
+    uint8_t original[256][3];
+    uint8_t working[256][3];
+    uint8_t target[3];
+    int index;
+    int component;
+    int step;
+
+    if (video == NULL) {
+        return;
+    }
+
+    if (first_colour < 0) first_colour = 0;
+    if (last_colour > 255) last_colour = 255;
+    if (first_colour > 255) first_colour = 255;
+    if (last_colour < 0) last_colour = 0;
+
+    target[0] = clamp_dac_component(red);
+    target[1] = clamp_dac_component(green);
+    target[2] = clamp_dac_component(blue);
+
+    wolf_legacy_video_wait_vbl(video, 1);
+    wolf_legacy_video_get_palette(video, original);
+
+    if (steps > 0 && first_colour <= last_colour) {
+        for (step = 0; step < steps; ++step) {
+            memcpy(working, original, sizeof(working));
+
+            for (index = first_colour; index <= last_colour; ++index) {
+                for (component = 0; component < 3; ++component) {
+                    int start = original[index][component];
+                    int delta = (int)target[component] - start;
+
+                    working[index][component] =
+                        (uint8_t)(start + delta * step / steps);
+                }
+            }
+
+            wolf_legacy_video_wait_vbl(video, 1);
+            wolf_legacy_video_set_palette(
+                video, (const uint8_t (*)[3])working);
+        }
+    }
+
+    wolf_legacy_video_fill_palette(
+        video, target[0], target[1], target[2]);
+    video->screen_faded = true;
+}
+
+void wolf_legacy_video_fade_in(
+    WolfLegacyVideo *video,
+    int first_colour,
+    int last_colour,
+    const uint8_t target_palette[256][3],
+    int steps)
+{
+    uint8_t original[256][3];
+    uint8_t target[256][3];
+    uint8_t working[256][3];
+    int index;
+    int component;
+    int step;
+
+    if (video == NULL || target_palette == NULL) {
+        return;
+    }
+
+    if (first_colour < 0) first_colour = 0;
+    if (last_colour > 255) last_colour = 255;
+    if (first_colour > 255) first_colour = 255;
+    if (last_colour < 0) last_colour = 0;
+
+    wolf_legacy_video_wait_vbl(video, 1);
+    wolf_legacy_video_get_palette(video, original);
+    memcpy(target, target_palette, sizeof(target));
+
+    if (steps > 0 && first_colour <= last_colour) {
+        for (step = 0; step < steps; ++step) {
+            memcpy(working, original, sizeof(working));
+
+            for (index = first_colour; index <= last_colour; ++index) {
+                for (component = 0; component < 3; ++component) {
+                    int start = original[index][component];
+                    int delta = (int)target[index][component] - start;
+
+                    working[index][component] =
+                        (uint8_t)(start + delta * step / steps);
+                }
+            }
+
+            wolf_legacy_video_wait_vbl(video, 1);
+            wolf_legacy_video_set_palette(
+                video, (const uint8_t (*)[3])working);
+        }
+    }
+
+    wolf_legacy_video_set_palette(
+        video, (const uint8_t (*)[3])target);
+    video->screen_faded = false;
+}
+
 void wolf_legacy_video_fill_palette(
     WolfLegacyVideo *video, int red, int green, int blue)
 {
