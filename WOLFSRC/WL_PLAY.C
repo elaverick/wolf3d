@@ -207,7 +207,7 @@ int songs[]=
  XFUNKIE_MUS,
  XDEATH_MUS,
  XGETYOU_MUS,		// DON'T KNOW
- ULTIMATE_MUS,	// Trans Grîsse
+ ULTIMATE_MUS,	// Trans Gr‚Äùsse
 
  DUNGEON_MUS,
  GOINGAFT_MUS,
@@ -1004,8 +1004,8 @@ void StopMusic(void)
 	for (i = 0;i < LASTMUSIC;i++)
 		if (audiosegs[STARTMUSIC + i])
 		{
-			MM_SetPurge(&((memptr)audiosegs[STARTMUSIC + i]),3);
-			MM_SetLock(&((memptr)audiosegs[STARTMUSIC + i]),false);
+			MM_SetPurge((memptr *)&audiosegs[STARTMUSIC + i],3);
+			MM_SetLock((memptr *)&audiosegs[STARTMUSIC + i],false);
 		}
 }
 
@@ -1037,7 +1037,7 @@ void StartMusic(void)
 		mmerror = false;
 	else
 	{
-		MM_SetLock(&((memptr)audiosegs[STARTMUSIC + chunk]),true);
+		MM_SetLock((memptr *)&audiosegs[STARTMUSIC + chunk],true);
 		SD_StartMusic((MusicGroup far *)audiosegs[STARTMUSIC + chunk]);
 	}
 }
