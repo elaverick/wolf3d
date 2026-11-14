@@ -1395,7 +1395,7 @@ void CalcTics (void)
 // calculate tics since last refresh for adaptive timing
 //
 	if (lasttimecount > TimeCount)
-		TimeCount = lasttimecount;		// if the game was paused a LONG time
+		WOLF_SET_TIMECNT(lasttimecount);		// if the game was paused a LONG time
 
 	do
 	{
@@ -1415,7 +1415,7 @@ void CalcTics (void)
 
 	if (tics>MAXTICS)
 	{
-		TimeCount -= (tics-MAXTICS);
+		WOLF_SET_TIMECNT(TimeCount - (tics-MAXTICS));
 		tics = MAXTICS;
 	}
 }
@@ -1533,7 +1533,8 @@ asm	rep stosw
 		FizzleFade(bufferofs,displayofs+screenofs,viewwidth,viewheight,20,false);
 		fizzlein = false;
 
-		lasttimecount = TimeCount = 0;		// don't make a big tic count
+		lasttimecount = 0;
+	WOLF_SET_TIMECNT(0);		// don't make a big tic count
 
 	}
 
