@@ -53,7 +53,14 @@ static void update_mouse_position(
     float offset_y = ((float)window_height -
         (float)platform->framebuffer_height * scale) * 0.5f;
     float x = (window_x - offset_x) / scale;
-    float y = (window_y - offset_y) / scale;
+    float y;
+
+    if (scale <= 0.0f) {
+        return;
+    }
+
+    x = (window_x - offset_x) / scale;
+    y = (window_y - offset_y) / scale;
 
     if (x < 0.0f) x = 0.0f;
     if (y < 0.0f) y = 0.0f;
@@ -350,12 +357,14 @@ void wolf_platform_mouse_command(
 
             platform->mouse_x = target_x;
             platform->mouse_y = target_y;
-            platform->mouse_delta_x = 0.0f;
-            platform->mouse_delta_y = 0.0f;
-            SDL_WarpMouseInWindow(
-                platform->window,
-                offset_x + (float)target_x * scale,
-                offset_y + (float)target_y * scale);
+            if (scale > 0.0f) {
+                platform->mouse_delta_x = 0.0f;
+                platform->mouse_delta_y = 0.0f;
+                SDL_WarpMouseInWindow(
+                    platform->window,
+                    offset_x + (float)target_x * scale,
+                    offset_y + (float)target_y * scale);
+            }
             break;
         }
 
