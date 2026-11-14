@@ -649,7 +649,7 @@ void BossKey(void)
 	SD_MusicOn();
 	VL_SetVGAPlaneMode ();
 	VL_TestPaletteSet ();
-	VL_SetPalette (gamepal);
+	VL_SetPalette (GAMEPAL_POINTER);
 	LoadLatchMem();
 }
 #endif

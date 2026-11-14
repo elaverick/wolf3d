@@ -106,7 +106,13 @@ void VWB_Vlin (int y1, int y2, int x, int color);
 //
 // wolfenstein EGA compatability stuff
 //
-extern byte far gamepal[768];
+#ifdef WOLF3D_NATIVE
+extern byte gamepal[768];
+#define GAMEPAL_POINTER gamepal
+#else
+extern byte far gamepal;
+#define GAMEPAL_POINTER (&gamepal)
+#endif
 
 void VH_SetDefaultColors (void);
 
@@ -123,7 +129,7 @@ void VH_SetDefaultColors (void);
 #define VW_SetLineWidth		VL_SetLineWidth
 #define VW_ColorBorder	VL_ColorBorder
 #define VW_WaitVBL		VL_WaitVBL
-#define VW_FadeIn()		VL_FadeIn(0,255,&gamepal,30);
+#define VW_FadeIn()		VL_FadeIn(0,255,GAMEPAL_POINTER,30);
 #define VW_FadeOut()	VL_FadeOut(0,255,0,0,0,30);
 #define VW_ScreenToScreen	VL_ScreenToScreen
 #define VW_SetDefaultColors	VH_SetDefaultColors

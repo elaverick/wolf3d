@@ -1085,7 +1085,7 @@ void InitRedShifts (void)
 	for (i=1;i<=NUMREDSHIFTS;i++)
 	{
 		workptr = (byte far *)&redshifts[i-1][0];
-		baseptr = gamepal;
+		baseptr = GAMEPAL_POINTER;
 
 		for (j=0;j<=255;j++)
 		{
@@ -1101,7 +1101,7 @@ void InitRedShifts (void)
 	for (i=1;i<=NUMWHITESHIFTS;i++)
 	{
 		workptr = (byte far *)&whiteshifts[i-1][0];
-		baseptr = gamepal;
+		baseptr = GAMEPAL_POINTER;
 
 		for (j=0;j<=255;j++)
 		{
@@ -1211,7 +1211,7 @@ void UpdatePaletteShifts (void)
 	else if (palshifted)
 	{
 		VW_WaitVBL(1);
-		VL_SetPalette (gamepal);		// back to normal
+		VL_SetPalette (GAMEPAL_POINTER);		// back to normal
 		palshifted = false;
 	}
 }
@@ -1233,7 +1233,7 @@ void FinishPaletteShifts (void)
 	{
 		palshifted = 0;
 		VW_WaitVBL(1);
-		VL_SetPalette (gamepal);
+		VL_SetPalette (GAMEPAL_POINTER);
 	}
 }
 
