@@ -31,18 +31,28 @@ The portable video library currently provides:
 - A caller-owned row-major 8-bit indexed framebuffer with clipping-safe pixel,
   line, rectangle and overlapping-copy operations.
 - In-place conversion of chunky image data into the original four-plane VGA
-  image layout.
-- Blitting of four-plane image data into a linear framebuffer.
+  image layout, and blitting of those images into a linear framebuffer.
 - Expansion of the original 6-bit VGA DAC palette into 8-bit RGB.
-- A software model of four VGA memory planes, including page offsets, latch
-  storage, basic drawing primitives and conversion of a selected page into a
-  linear indexed framebuffer.
+- A software model of four VGA memory planes, including the original page
+  offsets, latch storage, drawing primitives and conversion of a selected page
+  into a linear indexed framebuffer.
+- A C wall-post scaler that reproduces the original 16.16 fixed-point mapping.
 
-The VGA memory model is a compatibility layer, not a new renderer. It allows
-the port to preserve the original engine's planar memory assumptions while
-removing port I/O, segmented pointers and inline assembly. The original
-320-pixel display width uses 80 bytes per plane row; the original page and
-latch offsets will be wired in when the legacy video manager is connected.
+The VGA memory model is a compatibility layer, not a new renderer. It preserves
+the original planar memory model while removing port I/O, segmented pointers
+and inline assembly.
+
+The original VGA layout is represented explicitly:
+
+| Item | Value |
+|---|---:|
+| Plane size | 65,536 bytes |
+| Plane row stride | 80 bytes |
+| Screen page size | 16,640 bytes (80 x 208) |
+| Page 1 offset | 0 |
+| Page 2 offset | 16,640 |
+| Page 3 offset | 33,280 |
+| Latch storage starts | 49,920 |
 
 The image and latch copy functions currently require four-pixel-aligned
 destination X coordinates, matching the original picture and latch drawing
@@ -70,18 +80,20 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-GitHub Actions runs the CTest suite on Ubuntu and Windows. Tests cover
-framebuffer initialisation and storage bounds, row-pitch padding, clipping,
-overlapping copies, chunky-to-planar conversion, planar image blits, palette
-expansion, VGA plane addressing, page offsets, latch copies and presentation.
+GitHub Actions runs Release builds and CTest on Ubuntu and Windows, treating
+compiler warnings as errors. The Ubuntu job also runs an AddressSanitizer and
+UndefinedBehaviorSanitizer build. Tests cover framebuffer bounds and clipping,
+overlapping copies, image layout conversion, VGA plane addressing, original
+page offsets, latch copies, palette expansion and wall-post scaling against
+the original fixed-point algorithm.
 
 ## Next steps
 
 1. Connect the software VGA memory model to the original `VL_*` video API.
 2. Replace the VGA register and segmented-memory operations in the legacy
    drawing code with calls into this compatibility layer.
-3. Translate the assembly scaler and remaining drawing routines into readable
-   C, preserving their original pixel output.
+3. Translate sprite scaling and remaining assembly drawing routines into
+   readable C, preserving their original pixel output.
 4. Connect the selected display page and palette to SDL3 presentation.
 5. Port input, timing, audio, filesystem and memory management independently.
 6. Bring up the original game loop only after the renderer and resource loading
