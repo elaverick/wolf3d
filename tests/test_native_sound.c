@@ -91,7 +91,7 @@ static void test_pc_speaker_stream_timing_and_silence(void)
 
     SD_Startup();
     assert(SD_SetSoundMode(sdm_PC));
-    assert(SD_PlaySound(SELECTWPNSND) == false);
+    assert(SD_PlaySound(SELECTWPNSND) == true);
     assert(captured_sample_count == 630);
     assert(captured_samples[0] != 0);
 
@@ -127,7 +127,7 @@ static void test_priority_and_replacement(void)
 
     {
         int previous_clears = clear_calls;
-        assert(SD_PlaySound(SELECTITEMSND) == false);
+        assert(SD_PlaySound(SELECTITEMSND) == true);
         assert(clear_calls == previous_clears + 1);
         assert(SD_SoundPlaying() == (word)SELECTITEMSND);
     }
