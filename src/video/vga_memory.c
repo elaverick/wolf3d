@@ -396,8 +396,6 @@ bool wolf_vga_memory_latch_to_screen(
         return false;
     }
 
-    row_end = height;
-
     for (plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
         uint8_t *plane_memory = memory->planes[plane];
 
