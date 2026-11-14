@@ -17,6 +17,7 @@ static void test_basic_video_api(void)
     uint8_t palette[256][3] = {{0}};
     const WolfFramebuffer *framebuffer;
     const uint8_t (*rgb_palette)[3];
+    uint8_t palette_copy[256 * 3];
     int width;
     int height;
 
@@ -48,6 +49,15 @@ static void test_basic_video_api(void)
     assert(rgb_palette[7][0] == 255);
     assert(rgb_palette[7][1] == 130);
     assert(rgb_palette[7][2] == 65);
+    VL_GetPalette(palette_copy);
+    assert(palette_copy[7 * 3] == 63);
+    assert(palette_copy[7 * 3 + 1] == 32);
+    assert(palette_copy[7 * 3 + 2] == 16);
+
+    VL_FadeOut(7, 7, 0, 0, 0, 1);
+    assert(screenfaded);
+    VL_FadeIn(7, 7, (const uint8_t *)palette, 1);
+    assert(!screenfaded);
 
     VL_SizeTile8String("ABC", &width, &height);
     assert(width == 24);
