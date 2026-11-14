@@ -12,6 +12,17 @@
 //
 void CP_ReadThis(void);
 
+static void CP_NewGameItem(int unused) { (void)unused; CP_NewGame(); }
+static void CP_SoundItem(int unused) { (void)unused; CP_Sound(); }
+static void CP_ControlItem(int unused) { (void)unused; CP_Control(); }
+static void CP_LoadGameItem(int quick) { (void)CP_LoadGame(quick); }
+static void CP_SaveGameItem(int quick) { (void)CP_SaveGame(quick); }
+static void CP_ChangeViewItem(int unused) { (void)unused; CP_ChangeView(); }
+static void CP_ReadThisItem(int unused) { (void)unused; CP_ReadThis(); }
+void CP_ViewScoresItem(int unused) { (void)unused; CP_ViewScores(); }
+static void MouseSensitivityItem(int unused) { (void)unused; MouseSensitivity(); }
+static void CustomControlsItem(int unused) { (void)unused; CustomControls(); }
+
 #ifdef SPEAR
 #define STARTITEM	newgame
 
