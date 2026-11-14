@@ -417,6 +417,11 @@ if(WOLF3D_BUILD_SDL3_PLATFORM)
         if(WOLF3D_BUILD_PLATFORM_SMOKE_TEST)
             add_executable(wolf3d_platform_smoke
                 examples/platform_smoke.c
+                src/platform/native_tick.c
+            )
+
+            target_include_directories(wolf3d_platform_smoke PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/platform
             )
 
             target_link_libraries(wolf3d_platform_smoke
