@@ -1,5 +1,22 @@
 // ID_VL.H
 
+#ifdef WOLF3D_NATIVE
+
+#include "../src/video/legacy_vl.h"
+
+#define MS_Quit Quit
+#define SCREENSEG 0
+#define SCREENWIDTH WOLF_VGA_LEGACY_STRIDE_BYTES
+#define MAXSCANLINES 200
+#define CHARWIDTH 2
+#define TILEWIDTH 4
+
+/* VGA register operations are replaced by the software plane implementation. */
+#define VGAWRITEMODE(mode) ((void)(mode))
+#define VGAMAPMASK(mask) ((void)(mask))
+#define VGAREADMAP(map) ((void)(map))
+
+#else
 // wolf compatability
 
 #define MS_Quit	Quit
@@ -159,3 +176,5 @@ void VL_SizePropString (char *str, int *width, int *height, char far *font);
 
 void VL_TestPaletteSet (void);
 
+
+#endif /* WOLF3D_NATIVE */
