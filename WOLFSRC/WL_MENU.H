@@ -182,6 +182,7 @@ void CP_ChangeView(void);
 void CP_ExitOptions(void);
 void CP_Quit(void);
 void CP_ViewScores(void);
+void CP_ViewScoresItem(int unused);
 int  CP_EndGame(void);
 int  CP_CheckQuick(unsigned scancode);
 void CustomControls(void);
