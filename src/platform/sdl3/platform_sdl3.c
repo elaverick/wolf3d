@@ -30,6 +30,7 @@ struct WolfPlatform {
     bool pending_key_event;
     int pending_key_scan;
     int pending_ascii;
+    bool quit_requested;
 };
 
 static WolfPlatform *active_platform;
@@ -301,7 +302,8 @@ bool wolf_platform_pump_events(WolfPlatform *platform)
 
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_EVENT_QUIT) {
-            return false;
+            platform->quit_requested = true;
+            break;
         }
 
         if (event.type == SDL_EVENT_KEY_DOWN ||
@@ -357,7 +359,7 @@ bool wolf_platform_pump_events(WolfPlatform *platform)
         }
     }
 
-    return true;
+    return !platform->quit_requested;
 }
 
 bool wolf_platform_present_indexed(

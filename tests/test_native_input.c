@@ -18,6 +18,7 @@ static int fake_mouse_dx;
 static int fake_mouse_dy;
 static uint64_t fake_time_ms;
 static boolean inject_key_on_delay;
+static boolean fake_quit_requested;
 
 bool wolf_platform_key_down(int scan_code)
 {
@@ -68,7 +69,7 @@ void wolf_platform_mouse_command(
 bool wolf_platform_pump_events(WolfPlatform *platform)
 {
     (void)platform;
-    return true;
+    return !fake_quit_requested;
 }
 
 void wolf_platform_delay_ms(uint32_t milliseconds)
@@ -140,12 +141,26 @@ static void test_key_events_and_acknowledgement(void)
     assert(fake_time_ms >= 100);
 }
 
+static void test_window_close_becomes_escape(void)
+{
+    fake_quit_requested = true;
+    IN_ClearKeysDown();
+
+    assert(IN_CheckAck());
+    assert(LastScan == sc_Escape);
+    assert(Keyboard[sc_Escape]);
+
+    fake_quit_requested = false;
+    IN_ClearKeysDown();
+}
+
 int main(void)
 {
     IN_Startup();
     assert(MousePresent);
 
     test_keyboard_control();
+    test_window_close_becomes_escape();
     test_mouse_control();
     test_key_events_and_acknowledgement();
 

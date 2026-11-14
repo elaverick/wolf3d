@@ -50,8 +50,7 @@ static void pump_platform_input(void)
 {
     int scan_code;
     int ascii;
-
-    (void)wolf_platform_pump_events(NULL);
+    bool platform_running = wolf_platform_pump_events(NULL);
 
     while (wolf_platform_take_key_event(&scan_code)) {
         if (scan_code == 0x7f) {
@@ -74,6 +73,15 @@ static void pump_platform_input(void)
 
         for (code = 0; code < NumCodes; ++code) {
             Keyboard[code] = wolf_platform_key_down(code);
+        }
+    }
+
+    /* A window close is treated like Escape in the original game's UI. */
+    if (!platform_running) {
+        Keyboard[sc_Escape] = true;
+        LastScan = sc_Escape;
+        if (key_hook != NULL) {
+            key_hook();
         }
     }
 }
