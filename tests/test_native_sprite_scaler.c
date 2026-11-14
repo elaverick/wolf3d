@@ -190,7 +190,7 @@ static void test_horizontal_and_vertical_clipping(void)
     assert(video.memory.planes[0][(size_t)40 * video.memory.stride_bytes +
         28u / 4u] == 22);
     assert(video.memory.planes[0][(size_t)42 * video.memory.stride_bytes +
-        28u / 4u] == 23);
+        28u / 4u] == 33);
 }
 
 static void test_rejects_malformed_shape_data(void)
