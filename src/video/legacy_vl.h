@@ -35,6 +35,7 @@ void VL_SetLineWidth(unsigned width);
 void VL_SetSplitScreen(int line_number);
 void VL_WaitVBL(int vbls);
 void VL_CrtcStart(int crtc);
+void VL_SetCRTC(int crtc);
 void VL_SetScreen(int crtc, int horizontal_pan);
 
 void VL_FillPalette(int red, int green, int blue);
