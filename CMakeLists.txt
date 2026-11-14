@@ -27,6 +27,11 @@ if(WOLF3D_BUILD_SDL3_PLATFORM)
                 SDL3::SDL3
         )
 
+        target_compile_definitions(wolf3d_platform
+            PRIVATE
+                SDL_MAIN_HANDLED
+        )
+
         if(WOLF3D_BUILD_PLATFORM_SMOKE_TEST)
             add_executable(wolf3d_platform_smoke
                 examples/platform_smoke.c
