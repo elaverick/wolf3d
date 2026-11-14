@@ -9,18 +9,9 @@
 
 #include <SDL3/SDL.h>
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#else
-#include <dirent.h>
-#include <ctype.h>
-#endif
-
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 
 struct WolfPlatform {
     SDL_Window *window;
@@ -209,70 +200,6 @@ bool wolf_platform_present_indexed(
     }
 
     return true;
-}
-
-bool wolf_platform_any_file_matches(const char *pattern)
-{
-    if (pattern == NULL) {
-        return false;
-    }
-
-#ifdef _WIN32
-    {
-        WIN32_FIND_DATAA entry;
-        HANDLE search = FindFirstFileA(pattern, &entry);
-
-        if (search == INVALID_HANDLE_VALUE) {
-            return false;
-        }
-
-        FindClose(search);
-        return true;
-    }
-#else
-    {
-        const char *pattern_extension = strrchr(pattern, '.');
-        DIR *directory = opendir(".");
-        struct dirent *entry;
-
-        if (directory == NULL) {
-            return false;
-        }
-
-        if (pattern_extension == NULL ||
-            (pattern[0] != '*' || pattern[1] != '.')) {
-            closedir(directory);
-            return false;
-        }
-
-        while ((entry = readdir(directory)) != NULL) {
-            const char *entry_extension = strrchr(entry->d_name, '.');
-            const unsigned char *left;
-            const unsigned char *right;
-
-            if (entry_extension == NULL) {
-                continue;
-            }
-
-            left = (const unsigned char *)entry_extension;
-            right = (const unsigned char *)pattern_extension;
-
-            while (*left != '\0' && *right != '\0' &&
-                   tolower(*left) == tolower(*right)) {
-                ++left;
-                ++right;
-            }
-
-            if (*left == '\0' && *right == '\0') {
-                closedir(directory);
-                return true;
-            }
-        }
-
-        closedir(directory);
-        return false;
-    }
-#endif
 }
 
 uint64_t wolf_platform_time_ms(void)
