@@ -22,13 +22,30 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure
-        run: cmake -S . -B build -DWOLF3D_BUILD_SDL3_PLATFORM=OFF -DCMAKE_BUILD_TYPE=Debug
+        run: cmake -S . -B build -DWOLF3D_BUILD_SDL3_PLATFORM=OFF -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build --config Debug --parallel
+        run: cmake --build build --config Release --parallel
 
       - name: Run tests
-        run: ctest --test-dir build -C Debug --output-on-failure
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Configure sanitised build
+        if: runner.os == 'Linux'
+        run: >-
+          cmake -S . -B build-sanitized
+          -DWOLF3D_BUILD_SDL3_PLATFORM=OFF
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+
+      - name: Build sanitised targets
+        if: runner.os == 'Linux'
+        run: cmake --build build-sanitized --parallel
+
+      - name: Run sanitised tests
+        if: runner.os == 'Linux'
+        run: ctest --test-dir build-sanitized --output-on-failure
