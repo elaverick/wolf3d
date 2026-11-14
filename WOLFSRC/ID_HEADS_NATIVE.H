@@ -93,6 +93,10 @@ extern char signon;
 #include "ID_SD.H"
 #include "ID_US.H"
 
+#ifndef SCREENWIDTH
+#define SCREENWIDTH WOLF_VGA_LEGACY_STRIDE_BYTES
+#endif
+
 void Quit(char *error);
 
 #define PORTTILESWIDE 20
