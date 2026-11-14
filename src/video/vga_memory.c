@@ -352,6 +352,71 @@ bool wolf_vga_memory_mem_to_latch(
     return true;
 }
 
+bool wolf_vga_memory_screen_to_screen(
+    WolfVgaMemory *memory,
+    size_t source_offset,
+    size_t destination_offset,
+    int width_bytes,
+    int height)
+{
+    size_t source_last_row;
+    size_t destination_last_row;
+    int first_row;
+    int end_row;
+    int row_step;
+    int plane;
+
+    if (!vga_memory_is_valid(memory) ||
+        width_bytes <= 0 || height <= 0 ||
+        width_bytes > memory->stride_bytes ||
+        (size_t)(height - 1) >
+            SIZE_MAX / (size_t)memory->stride_bytes) {
+        return false;
+    }
+
+    source_last_row = source_offset +
+        (size_t)(height - 1) * (size_t)memory->stride_bytes;
+    destination_last_row = destination_offset +
+        (size_t)(height - 1) * (size_t)memory->stride_bytes;
+
+    if (source_offset > memory->plane_size ||
+        destination_offset > memory->plane_size ||
+        source_last_row < source_offset ||
+        destination_last_row < destination_offset ||
+        source_last_row > memory->plane_size ||
+        destination_last_row > memory->plane_size ||
+        (size_t)width_bytes > memory->plane_size - source_last_row ||
+        (size_t)width_bytes > memory->plane_size - destination_last_row) {
+        return false;
+    }
+
+    if (destination_offset > source_offset &&
+        destination_offset < source_last_row + (size_t)width_bytes) {
+        first_row = height - 1;
+        end_row = -1;
+        row_step = -1;
+    } else {
+        first_row = 0;
+        end_row = height;
+        row_step = 1;
+    }
+
+    for (plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        int row;
+
+        for (row = first_row; row != end_row; row += row_step) {
+            memmove(
+                memory->planes[plane] + destination_offset +
+                    (size_t)row * (size_t)memory->stride_bytes,
+                memory->planes[plane] + source_offset +
+                    (size_t)row * (size_t)memory->stride_bytes,
+                (size_t)width_bytes);
+        }
+    }
+
+    return true;
+}
+
 bool wolf_vga_memory_latch_to_screen(
     WolfVgaMemory *memory,
     size_t source_offset,
