@@ -25,11 +25,31 @@ static void record_delay(uint32_t milliseconds, void *userdata)
     last_delay_ms = milliseconds;
 }
 
+static unsigned present_call_count;
+static uint8_t last_presented_red;
+
+static bool record_present(
+    const uint8_t *pixels,
+    int pitch,
+    const uint8_t palette[256][3],
+    void *userdata)
+{
+    unsigned *counter = (unsigned *)userdata;
+
+    assert(pixels != NULL);
+    assert(pitch == 320);
+    ++(*counter);
+    present_call_count = *counter;
+    last_presented_red = palette[5][0];
+    return true;
+}
+
 static void test_palette_fades_and_timing(void)
 {
     WolfLegacyVideo video;
     uint8_t target_palette[256][3] = {{0}};
     unsigned callback_count = 0;
+    unsigned present_count = 0;
 
     memset(vga_storage, 0, sizeof(vga_storage));
     assert(wolf_legacy_video_init(
@@ -41,6 +61,8 @@ static void test_palette_fades_and_timing(void)
         320));
 
     wolf_legacy_video_set_delay_callback(&video, record_delay, &callback_count);
+    wolf_legacy_video_set_present_callback(
+        &video, record_present, &present_count);
     wolf_legacy_video_set_color(&video, 5, 60, 30, 0);
     wolf_legacy_video_fade_out(&video, 5, 5, 0, 0, 0, 2);
 
@@ -52,6 +74,9 @@ static void test_palette_fades_and_timing(void)
     assert(callback_count == 3);
     assert(delay_call_count == 3);
     assert(last_delay_ms == 15);
+    assert(present_count == 3);
+    assert(present_call_count == 3);
+    assert(last_presented_red == 0);
 
     target_palette[5][0] = 63;
     target_palette[5][1] = 32;
@@ -70,6 +95,9 @@ static void test_palette_fades_and_timing(void)
     assert(video.palette_dac[6][1] == 10);
     assert(callback_count == 6);
     assert(last_delay_ms == 15);
+    assert(present_count == 6);
+    assert(present_call_count == 6);
+    assert(last_presented_red == 63);
 }
 
 static void test_video_page_and_palette(void)
