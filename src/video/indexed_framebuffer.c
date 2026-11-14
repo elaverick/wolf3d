@@ -172,6 +172,110 @@ void wolf_framebuffer_fill_rect(
     }
 }
 
+void wolf_palette_expand_vga6(
+    const uint8_t source[256][3],
+    uint8_t destination[256][3])
+{
+    int colour;
+    int component;
+
+    if (source == NULL || destination == NULL) {
+        return;
+    }
+
+    for (colour = 0; colour < 256; ++colour) {
+        for (component = 0; component < 3; ++component) {
+            uint8_t value = source[colour][component];
+
+            if (value > 63) {
+                value = 63;
+            }
+
+            destination[colour][component] =
+                (uint8_t)((value << 2) | (value >> 4));
+        }
+    }
+}
+
+bool wolf_framebuffer_blit_planar4(
+    WolfFramebuffer *framebuffer,
+    int x,
+    int y,
+    int width,
+    int height,
+    const uint8_t *source,
+    size_t source_size)
+{
+    size_t plane_row_bytes;
+    size_t plane_size;
+    size_t required_size;
+    int64_t source_x_start = 0;
+    int64_t source_y_start = 0;
+    int64_t source_x_end = width;
+    int64_t source_y_end = height;
+    int64_t source_y;
+    int64_t source_x;
+
+    if (!framebuffer_is_valid(framebuffer) || source == NULL ||
+        width <= 0 || height <= 0 || (width & 3) != 0) {
+        return false;
+    }
+
+    plane_row_bytes = (size_t)width / 4;
+    if ((size_t)height > SIZE_MAX / plane_row_bytes) {
+        return false;
+    }
+
+    plane_size = plane_row_bytes * (size_t)height;
+    if (plane_size > SIZE_MAX / 4) {
+        return false;
+    }
+
+    required_size = plane_size * 4;
+    if (source_size < required_size) {
+        return false;
+    }
+
+    if (x < 0) {
+        source_x_start = -(int64_t)x;
+    }
+    if (y < 0) {
+        source_y_start = -(int64_t)y;
+    }
+
+    if ((int64_t)x + source_x_end > framebuffer->width) {
+        source_x_end = (int64_t)framebuffer->width - x;
+    }
+    if ((int64_t)y + source_y_end > framebuffer->height) {
+        source_y_end = (int64_t)framebuffer->height - y;
+    }
+
+    if (source_x_start >= source_x_end ||
+        source_y_start >= source_y_end) {
+        return true;
+    }
+
+    for (source_y = source_y_start; source_y < source_y_end; ++source_y) {
+        size_t destination_row =
+            (size_t)(y + (int)source_y) * framebuffer->pitch;
+
+        for (source_x = source_x_start; source_x < source_x_end; ++source_x) {
+            size_t plane = (size_t)source_x & 3u;
+            size_t plane_column = (size_t)source_x >> 2;
+            size_t source_offset =
+                plane * plane_size +
+                (size_t)source_y * plane_row_bytes +
+                plane_column;
+            size_t destination_column = (size_t)(x + (int)source_x);
+
+            framebuffer->pixels[destination_row + destination_column] =
+                source[source_offset];
+        }
+    }
+
+    return true;
+}
+
 void wolf_framebuffer_copy(
     WolfFramebuffer *destination,
     int destination_x,
