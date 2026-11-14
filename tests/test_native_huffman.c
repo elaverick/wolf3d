@@ -59,12 +59,15 @@ static void test_rejects_short_or_invalid_streams(void)
     table[0].bit0 = 'B';
 
     /* The second bit selects an invalid leaf node. */
+    /* The second bit selects an out-of-range child node (node 255). */
     table[0].bit0 = 511;
     assert(!wolf_native_huffman_expand(
         one_bit, sizeof(one_bit), two_bytes, 2,
         table, WOLF_NATIVE_HUFFMAN_NODE_COUNT));
 
+    /* A valid stream cannot expand beyond the caller-provided buffer. */
     table[254].bit1 = 'C';
+    table[254].bit0 = 'A';
     assert(!wolf_native_huffman_expand(
         one_bit, sizeof(one_bit), two_bytes, 9,
         table, WOLF_NATIVE_HUFFMAN_NODE_COUNT));
