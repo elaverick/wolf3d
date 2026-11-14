@@ -155,7 +155,7 @@ if(WOLF3D_BUILD_SDL3_PLATFORM)
             target_link_libraries(wolf3d_platform_smoke
                 PRIVATE
                     wolf3d_platform
-                    wolf3d_video
+                    wolf3d_legacy_vl
             )
         endif()
     else()
