@@ -53,6 +53,24 @@ If SDL3 is not found, CMake reports that the platform targets are skipped.
 This is deliberate while the legacy engine is being separated from its DOS
 dependencies.
 
+## Framebuffer test suite
+
+The portable framebuffer library is built independently of SDL3, so its tests
+can run on machines that do not have SDL installed.
+
+Run locally:
+
+```sh
+cmake -S . -B build -DWOLF3D_BUILD_SDL3_PLATFORM=OFF
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
+```
+
+GitHub Actions runs the same CTest suite on both Ubuntu and Windows. The tests
+cover framebuffer initialisation and storage bounds, row-pitch padding,
+clipped pixel/line/rectangle operations, overlapping copies, planar VGA image
+conversion, and expansion of the original 6-bit DAC palette to 8-bit RGB.
+
 ## Next steps
 
 1. Replace the VGA register and segmented-memory operations with a portable
