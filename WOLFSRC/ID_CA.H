@@ -8,12 +8,18 @@
 
 //===========================================================================
 
-typedef	struct
+typedef struct
 {
-	long		planestart[3];
-	unsigned	planelength[3];
-	unsigned	width,height;
-	char		name[16];
+#ifdef WOLF3D_NATIVE
+    int32_t planestart[3];
+    word planelength[3];
+    word width, height;
+#else
+    long planestart[3];
+    unsigned planelength[3];
+    unsigned width, height;
+#endif
+    char name[16];
 } maptype;
 
 //===========================================================================
@@ -73,8 +79,12 @@ boolean CA_WriteFile (char *filename, void far *ptr, long length);
 long CA_RLEWCompress (unsigned huge *source, long length, unsigned huge *dest,
   unsigned rlewtag);
 
+#ifdef WOLF3D_NATIVE
+void CA_RLEWexpand (word huge *source, word huge *dest, long length, word rlewtag);
+#else
 void CA_RLEWexpand (unsigned huge *source, unsigned huge *dest,long length,
   unsigned rlewtag);
+#endif
 
 void CA_Startup (void);
 void CA_Shutdown (void);

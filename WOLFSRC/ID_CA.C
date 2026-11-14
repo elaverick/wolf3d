@@ -32,15 +32,24 @@ loaded into the data segment
 
 typedef struct
 {
-  unsigned bit0,bit1;	// 0-255 is a character, > is a pointer to a node
+#ifdef WOLF3D_NATIVE
+  word bit0, bit1;
+#else
+  unsigned bit0, bit1;
+#endif
 } huffnode;
 
 
 typedef struct
 {
-	unsigned	RLEWtag;
-	long		headeroffsets[100];
-	byte		tileinfo[];
+#ifdef WOLF3D_NATIVE
+    word RLEWtag;
+    int32_t headeroffsets[100];
+#else
+    unsigned RLEWtag;
+    long headeroffsets[100];
+#endif
+    byte tileinfo[];
 } mapfiletype;
 
 
@@ -96,8 +105,13 @@ char extension[5],	// Need a string, not constant to change cache files
 
 void CA_CannotOpen(char *string);
 
-long		_seg *grstarts;	// array of offsets in egagraph, -1 for sparse
-long		_seg *audiostarts;	// array of offsets in audio / audiot
+#ifdef WOLF3D_NATIVE
+int32_t *_seg *grstarts;
+int32_t *_seg *audiostarts;
+#else
+long *_seg *grstarts;
+long *_seg *audiostarts;
+#endif
 
 #ifdef GRHEADERLINKED
 huffnode	*grhuffman;
@@ -116,7 +130,11 @@ int			grhandle;		// handle to EGAGRAPH
 int			maphandle;		// handle to MAPTEMP / GAMEMAPS
 int			audiohandle;	// handle to AUDIOT / AUDIO
 
-long		chunkcomplen,chunkexplen;
+#ifdef WOLF3D_NATIVE
+int32_t chunkcomplen, chunkexplen;
+#else
+long chunkcomplen, chunkexplen;
+#endif
 
 SDMode		oldsoundmode;
 
@@ -131,20 +149,25 @@ void	CAL_CarmackExpand (unsigned far *source, unsigned far *dest,
 //#define	GRFILEPOS(c) (*(long far *)(((byte far *)grstarts)+(c)*3)&0xffffff)
 long GRFILEPOS(int c)
 {
-	long value;
-	int	offset;
-
-	offset = c*3;
-
-	value = *(long far *)(((byte far *)grstarts)+offset);
-
-	value &= 0x00ffffffl;
-
-	if (value == 0xffffffl)
-		value = -1;
-
-	return value;
-};
+#ifdef WOLF3D_NATIVE
+    const byte *table = (const byte *)grstarts;
+    size_t offset;
+    uint32_t value;
+    if (c < 0 || table == NULL) return -1;
+    offset = (size_t)c * 3u;
+    value = (uint32_t)table[offset] |
+        ((uint32_t)table[offset + 1u] << 8) |
+        ((uint32_t)table[offset + 2u] << 16);
+    return value == 0x00ffffffu ? -1 : (long)value;
+#else
+    long value;
+    int offset = c * 3;
+    value = *(long far *)(((byte far *)grstarts) + offset);
+    value &= 0x00ffffffl;
+    if (value == 0xffffffl) value = -1;
+    return value;
+#endif
+}
 #else
 #define FILEPOSSIZE	4
 #define	GRFILEPOS(c) (grstarts[c])
@@ -212,29 +235,39 @@ void CAL_GetGrChunkLength (int chunk)
 
 boolean CA_FarRead (int handle, byte far *dest, long length)
 {
-	if (length>0xffffl)
-		Quit ("CA_FarRead doesn't support 64K reads yet!");
-
-asm		push	ds
-asm		mov	bx,[handle]
-asm		mov	cx,[WORD PTR length]
-asm		mov	dx,[WORD PTR dest]
-asm		mov	ds,[WORD PTR dest+2]
-asm		mov	ah,0x3f				// READ w/handle
-asm		int	21h
-asm		pop	ds
-asm		jnc	good
-	errno = _AX;
-	return	false;
+#ifdef WOLF3D_NATIVE
+    byte *cursor = dest;
+    long remaining = length;
+    if (handle < 0 || dest == NULL || length < 0) { errno = EINVAL; return false; }
+    while (remaining > 0) {
+        unsigned request = remaining > 0x7fffffffL ? 0x7fffffffu : (unsigned)remaining;
+        int count = (int)read(handle, cursor, request);
+        if (count < 0 && errno == EINTR) continue;
+        if (count <= 0) { if (count == 0) errno = EIO; return false; }
+        cursor += count;
+        remaining -= count;
+    }
+    return true;
+#else
+    if (length>0xffffl) Quit ("CA_FarRead doesn't support 64K reads yet!");
+asm push ds
+asm mov bx,[handle]
+asm mov cx,[WORD PTR length]
+asm mov dx,[WORD PTR dest]
+asm mov ds,[WORD PTR dest+2]
+asm mov ah,0x3f
+asm int 21h
+asm pop ds
+asm jnc good
+    errno = _AX; return false;
 good:
-asm		cmp	ax,[WORD PTR length]
-asm		je	done
-	errno = EINVFMT;			// user manager knows this is bad read
-	return	false;
+asm cmp ax,[WORD PTR length]
+asm je done
+    errno = EINVFMT; return false;
 done:
-	return	true;
+    return true;
+#endif
 }
-
 
 /*
 ==========================
@@ -248,30 +281,39 @@ done:
 
 boolean CA_FarWrite (int handle, byte far *source, long length)
 {
-	if (length>0xffffl)
-		Quit ("CA_FarWrite doesn't support 64K reads yet!");
-
-asm		push	ds
-asm		mov	bx,[handle]
-asm		mov	cx,[WORD PTR length]
-asm		mov	dx,[WORD PTR source]
-asm		mov	ds,[WORD PTR source+2]
-asm		mov	ah,0x40			// WRITE w/handle
-asm		int	21h
-asm		pop	ds
-asm		jnc	good
-	errno = _AX;
-	return	false;
+#ifdef WOLF3D_NATIVE
+    const byte *cursor = source;
+    long remaining = length;
+    if (handle < 0 || source == NULL || length < 0) { errno = EINVAL; return false; }
+    while (remaining > 0) {
+        unsigned request = remaining > 0x7fffffffL ? 0x7fffffffu : (unsigned)remaining;
+        int count = (int)write(handle, cursor, request);
+        if (count < 0 && errno == EINTR) continue;
+        if (count <= 0) { if (count == 0) errno = EIO; return false; }
+        cursor += count;
+        remaining -= count;
+    }
+    return true;
+#else
+    if (length>0xffffl) Quit ("CA_FarWrite doesn't support 64K reads yet!");
+asm push ds
+asm mov bx,[handle]
+asm mov cx,[WORD PTR length]
+asm mov dx,[WORD PTR source]
+asm mov ds,[WORD PTR source+2]
+asm mov ah,0x40
+asm int 21h
+asm pop ds
+asm jnc good
+    errno = _AX; return false;
 good:
-asm		cmp	ax,[WORD PTR length]
-asm		je	done
-	errno = ENOMEM;				// user manager knows this is bad write
-	return	false;
-
+asm cmp ax,[WORD PTR length]
+asm je done
+    errno = ENOMEM; return false;
 done:
-	return	true;
+    return true;
+#endif
 }
-
 
 /*
 ==========================

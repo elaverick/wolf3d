@@ -16,32 +16,47 @@
 
 typedef struct
 {
-  int	width,
-	height,
-	orgx,orgy,
-	xl,yl,xh,yh,
-	shifts;
+#ifdef WOLF3D_NATIVE
+  int16_t width, height, orgx, orgy, xl, yl, xh, yh, shifts;
+#else
+  int width, height, orgx, orgy, xl, yl, xh, yh, shifts;
+#endif
 } spritetabletype;
 
-typedef	struct
+typedef struct
 {
-	unsigned	sourceoffset[MAXSHIFTS];
-	unsigned	planesize[MAXSHIFTS];
-	unsigned	width[MAXSHIFTS];
-	byte		data[];
+#ifdef WOLF3D_NATIVE
+    word sourceoffset[MAXSHIFTS];
+    word planesize[MAXSHIFTS];
+    word width[MAXSHIFTS];
+#else
+    unsigned sourceoffset[MAXSHIFTS];
+    unsigned planesize[MAXSHIFTS];
+    unsigned width[MAXSHIFTS];
+#endif
+    byte data[];
 } spritetype;		// the memptr for each sprite points to this
 
 typedef struct
 {
-	int width,height;
+#ifdef WOLF3D_NATIVE
+    int16_t width, height;
+#else
+    int width, height;
+#endif
 } pictabletype;
 
 
 typedef struct
 {
-	int height;
-	int location[256];
-	char width[256];
+#ifdef WOLF3D_NATIVE
+    int16_t height;
+    int16_t location[256];
+#else
+    int height;
+    int location[256];
+#endif
+    char width[256];
 } fontstruct;
 
 
