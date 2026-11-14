@@ -44,7 +44,7 @@ static void test_basic_video_api(void)
     palette[7][0] = 63;
     palette[7][1] = 32;
     palette[7][2] = 16;
-    VL_SetPalette((const uint8_t (*)[3])palette);
+    VL_SetPalette((const uint8_t *)palette);
     assert(rgb_palette[7][0] == 255);
     assert(rgb_palette[7][1] == 130);
     assert(rgb_palette[7][2] == 65);
@@ -82,7 +82,7 @@ static void test_image_and_text_api(void)
     assert(framebuffer->pixels[7 * 320 + 7] == 14);
 
     memset(tile_data + 65 * 64, 0xaa, 64);
-    VL_DrawTile8String("A", tile_data, 8, 8);
+    VL_DrawTile8String("A", (const char *)tile_data, 8, 8);
     assert(VL_Present());
     assert(framebuffer->pixels[8 * 320 + 8] == 0xaa);
     assert(framebuffer->pixels[15 * 320 + 15] == 0xaa);
