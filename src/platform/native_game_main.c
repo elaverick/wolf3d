@@ -31,13 +31,13 @@ static void delay_frame(uint32_t milliseconds, void *userdata)
 static void print_usage(const char *program)
 {
     fprintf(stdout,
-        "Usage: %s [--data-dir DIRECTORY]\\n"
-        "Run using original Wolfenstein 3-D game data in DIRECTORY.\\n"
-        "The directory must contain the matching WL6/WL1/SOD data files.\\n",
+        "Usage: %s [--data-dir DIRECTORY]\n"
+        "Run using original Wolfenstein 3-D game data in DIRECTORY.\n"
+        "The directory must contain the matching WL6/WL1/SOD data files.\n",
         program);
 }
 
-static bool select_data_directory(int argc, char **argv)
+static int select_data_directory(int argc, char **argv)
 {
     int index;
 
@@ -45,30 +45,27 @@ static bool select_data_directory(int argc, char **argv)
         if (strcmp(argv[index], "--help") == 0 ||
             strcmp(argv[index], "-h") == 0) {
             print_usage(argv[0]);
-            return false;
+            return 1;
         }
 
         if (strcmp(argv[index], "--data-dir") == 0 ||
             strcmp(argv[index], "-d") == 0) {
-            if (index + 1 >= argc || argv[index + 1][0] == '\\0') {
-                fprintf(stderr, "%s requires a directory path.\\n", argv[index]);
-                return false;
+            if (index + 1 >= argc || argv[index + 1][0] == '\0') {
+                fprintf(stderr, "%s requires a directory path.\n", argv[index]);
+                return -1;
             }
             if (native_change_directory(argv[index + 1]) != 0) {
-                fprintf(stderr, "Unable to use game data directory '%s': %s\\n",
+                fprintf(stderr, "Unable to use game data directory '%s': %s\n",
                     argv[index + 1], strerror(errno));
-                return false;
+                return -1;
             }
             ++index;
             continue;
         }
 
-        fprintf(stderr, "Unknown option: %s\\n", argv[index]);
-        print_usage(argv[0]);
-        return false;
     }
 
-    return true;
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -78,13 +75,13 @@ int main(int argc, char **argv)
     static WolfLegacyVideo video;
     static uint8_t vga_storage[WOLF_VGA_LEGACY_PLANE_SIZE * WOLF_VGA_PLANE_COUNT];
     static uint8_t framebuffer[320u * 200u];
+    int argument_status;
 
     _argc = argc;
     _argv = argv;
-    if (!select_data_directory(argc, argv)) {
-        return argc > 1 &&
-            (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)
-            ? 0 : 2;
+    argument_status = select_data_directory(argc, argv);
+    if (argument_status != 0) {
+        return argument_status > 0 ? 0 : 2;
     }
     platform = wolf_platform_create(&config);
     if (platform == NULL) {
