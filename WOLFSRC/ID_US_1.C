@@ -613,7 +613,7 @@ US_LineInput(int x,int y,char *buf,char *def,boolean escok,
 	cursormoved = redraw = true;
 
 	cursorvis = done = false;
-	lasttime = TimeCount;
+	lasttime = WOLF_GET_TIMECNT();
 	LastASCII = key_None;
 	LastScan = sc_None;
 
@@ -746,13 +746,13 @@ US_LineInput(int x,int y,char *buf,char *def,boolean escok,
 		if (cursormoved)
 		{
 			cursorvis = false;
-			lasttime = TimeCount - TickBase;
+			lasttime = WOLF_GET_TIMECNT() - TickBase;
 
 			cursormoved = false;
 		}
-		if (TimeCount - lasttime > TickBase / 2)
+		if (WOLF_GET_TIMECNT() - lasttime > TickBase / 2)
 		{
-			lasttime = TimeCount;
+			lasttime = WOLF_GET_TIMECNT();
 
 			cursorvis ^= true;
 		}
