@@ -132,6 +132,23 @@ if(BUILD_TESTING)
     endif()
 
     add_test(NAME legacy_vl COMMAND test_legacy_vl)
+
+    add_executable(test_native_compat
+        tests/test_native_compat.c
+    )
+
+    target_link_libraries(test_native_compat
+        PRIVATE
+            wolf3d_native_compat
+    )
+
+    if(MSVC)
+        target_compile_options(test_native_compat PRIVATE /W4 /WX)
+    else()
+        target_compile_options(test_native_compat PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
+    add_test(NAME native_compat COMMAND test_native_compat)
 endif()
 
 if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
