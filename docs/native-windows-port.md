@@ -2,25 +2,32 @@
 
 The native port is developed on the `windows-native-sdl3` branch. The original
 game sources remain intact while portable subsystems are introduced alongside
-them.
+them. All new code and the native build use C11; C++ is not enabled in CMake.
 
 ## Architecture
 
-- Game and renderer code remain C11. No C++ is used.
 - SDL3 is an implementation detail of the platform layer.
 - The game-facing platform API lives in `src/platform/platform.h`.
 - SDL3 implementation details live in `src/platform/sdl3/`.
 - The platform presents an 8-bit indexed framebuffer with a 256-entry 8-bit
   RGB palette.
-- Original game logic, resource formats and rendering algorithms should be
-  retained wherever practical. DOS hardware access and compiler-specific
-  assembly are replaced behind platform or renderer interfaces.
+- `WOLFSRC/ID_HEADS.H` selects `ID_HEADS_NATIVE.H` for native builds.
+- `WOLFSRC/ID_VL.H` selects the portable `src/video/legacy_vl.c`
+  implementation for native builds.
+- `src/platform/native_compat.c` supplies narrowly scoped compatibility for
+  legacy CRT calls, DOS-style file enumeration and the old mouse-register API.
+  The SDL3 platform provides the actual mouse state and window-coordinate
+  conversion.
+
+Original game logic, resource formats and rendering algorithms should be
+retained wherever practical. DOS hardware access and compiler-specific
+assembly are replaced behind platform or renderer interfaces.
 
 ## Current implementation
 
 The SDL3 adapter provides window creation, event pumping, monotonic timing,
-millisecond delays and indexed framebuffer presentation through a streaming
-texture. It scales with nearest-neighbour filtering and letterboxing.
+millisecond delays, mouse input and indexed framebuffer presentation through a
+streaming texture. It scales with nearest-neighbour filtering and letterboxing.
 
 The portable video library provides:
 
@@ -61,13 +68,49 @@ paths. Pixel, line and rectangle operations accept pixel-aligned coordinates.
 The CRTC split-screen operation remains a compatibility stub; it will need a
 software equivalent if the game uses that path in the native build.
 
-The SDL smoke executable now exercises the portable `VL_*` API through the
-platform callback. It is an end-to-end video-path test, separate from the
-original game loop.
+The SDL smoke executable exercises the portable `VL_*` API through the
+platform presentation callback. It is separate from the original game loop.
+
+## Original game source integration
+
+The native header path is now in place, and the opt-in
+`wolf3d_game_objects` CMake target compiles this initial group of original
+gameplay modules as C:
+
+- `WL_ACT1.C`, `WL_ACT2.C`, `WL_AGENT.C`
+- `WL_GAME.C`, `WL_INTER.C`, `WL_MENU.C`
+- `WL_PLAY.C`, `WL_STATE.C`, `WL_TEXT.C`
+
+The menu callbacks have typed adapters rather than incompatible function
+pointer casts. The old mouse interrupt calls are routed through the platform
+input layer, and the native CRT shim provides portable replacements for the
+legacy conversion and file-search functions.
+
+This is a compile milestone, not a playable game. The renderer, generated
+scalers, DOS managers, resource loading, audio and original main loop have not
+yet been brought up as one executable.
 
 ## Build
 
-Install SDL3 development files and make its CMake package discoverable, then:
+For the portable video library and tests without SDL3:
+
+```sh
+cmake -S . -B build -DWOLF3D_BUILD_SDL3_PLATFORM=OFF
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
+```
+
+To compile the selected original gameplay sources as C:
+
+```sh
+cmake -S . -B build-game \
+  -DWOLF3D_BUILD_SDL3_PLATFORM=OFF \
+  -DWOLF3D_BUILD_LEGACY_GAME_OBJECTS=ON
+cmake --build build-game --target wolf3d_game_objects --config Release
+```
+
+For the SDL3 platform build, install SDL3 development files and make its CMake
+package discoverable:
 
 ```sh
 cmake -S . -B build -DSDL3_DIR=/path/to/SDL3/cmake
@@ -79,34 +122,27 @@ presentation path.
 
 ## Automated tests
 
-The portable video library and tests build without SDL3.
-
-```sh
-cmake -S . -B build -DWOLF3D_BUILD_SDL3_PLATFORM=OFF
-cmake --build build --config Release
-ctest --test-dir build -C Release --output-on-failure
-```
-
 GitHub Actions runs Release builds and CTest on Ubuntu and Windows, treating
-compiler warnings as errors. The Ubuntu job also runs an AddressSanitizer and
-UndefinedBehaviorSanitizer build. The Windows job installs SDL3 with vcpkg and
-builds the SDL platform and end-to-end smoke executable. Tests cover framebuffer
-bounds and clipping, overlapping copies, image layout conversion, VGA plane
-addressing, original page offsets, latch copies, palette expansion, wall-post
-scaling against the original fixed-point algorithm, palette fades and the
-legacy `VL_*` compatibility API.
+warnings as errors for the portable libraries and test harness. The Ubuntu job
+also runs AddressSanitizer and UndefinedBehaviorSanitizer. The Windows job
+installs SDL3 with vcpkg, builds the SDL platform and smoke executable, and
+compiles the selected original gameplay sources as C.
+
+Tests cover framebuffer bounds and clipping, overlapping copies, image layout
+conversion, VGA plane addressing, original page offsets, latch copies, palette
+expansion, wall-post scaling against the original fixed-point algorithm,
+palette fades, the legacy `VL_*` API and native compatibility shims.
 
 ## Next steps
 
-1. Complete the remaining legacy video behaviours and route the native engine
-   headers/build to `legacy_vl.c` instead of the DOS-specific `ID_VL.C`.
-2. Translate sprite scaling and remaining assembly drawing routines into
-   readable C, preserving their original pixel output.
-3. Connect the selected display page and palette to SDL3 presentation in the
-   game loop.
-4. Port input, timing, audio, filesystem and memory management independently.
-5. Bring up the original game loop only after the renderer and resource loading
-   paths build cleanly on a modern compiler.
+1. Port the original VGA drawing and generated-scaler paths in `WL_DRAW.C`
+   and `WL_SCALE.C` to readable C, preserving their pixel output.
+2. Replace DOS memory, resource, audio and timing managers with portable
+   implementations, retaining their public game-facing APIs.
+3. Connect the original wall and sprite renderer to the indexed framebuffer
+   and SDL3 presentation callback.
+4. Port the DOS startup, configuration and main-loop paths, then build and run
+   the original game end to end.
 
 Do not copy SDL types into game headers. Do not introduce a second renderer
 while the original software renderer can be preserved.
