@@ -43,9 +43,45 @@ static void test_file_search(void)
 
     assert(findfirst(filename, &entry, FA_ARCH) == 0);
     assert(strcmp(entry.ff_name, filename) == 0);
+    assert(entry.active != 0);
+
+    /* Episode detection only needs the first match, so verify explicit close. */
+    wolf_native_findclose(&entry);
+    assert(entry.active == 0);
     assert(findnext(&entry) != 0);
 
     remove(filename);
+}
+
+static void test_file_search_iteration(void)
+{
+    const char *first = "native-compat-one.tmp";
+    const char *second = "native-compat-two.tmp";
+    struct ffblk entry;
+    FILE *file;
+    int count = 0;
+
+    file = fopen(first, "wb");
+    assert(file != NULL);
+    fputs("one", file);
+    assert(fclose(file) == 0);
+
+    file = fopen(second, "wb");
+    assert(file != NULL);
+    fputs("two", file);
+    assert(fclose(file) == 0);
+
+    assert(findfirst("native-compat-*.tmp", &entry, FA_ARCH) == 0);
+    do {
+        ++count;
+    } while (findnext(&entry) == 0);
+
+    assert(count == 2);
+    assert(entry.active == 0);
+    wolf_native_findclose(&entry); /* Closing an exhausted search is harmless. */
+
+    remove(first);
+    remove(second);
 }
 
 static void test_mouse_register_bridge(void)
@@ -63,6 +99,7 @@ int main(void)
 {
     test_integer_conversion();
     test_file_search();
+    test_file_search_iteration();
     test_mouse_register_bridge();
 
     puts("native compatibility tests passed");
