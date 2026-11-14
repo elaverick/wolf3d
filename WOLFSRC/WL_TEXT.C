@@ -167,7 +167,7 @@ void	TimedPicCommand (void)
 // wait for time
 //
 	WOLF_SET_TIMECNT(0);
-	while (TimeCount < picdelay)
+	while (WOLF_GET_TIMECNT() < picdelay)
 	;
 
 //
