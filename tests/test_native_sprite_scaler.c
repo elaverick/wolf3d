@@ -152,6 +152,48 @@ static void test_centre_out_offsets_and_multiple_posts(void)
     assert(framebuffer_pixels[71u * 320u + 162u] == 43);
 }
 
+static void test_fractional_scale_matches_compiled_width_table(void)
+{
+    uint8_t shape[TEST_SHAPE_SIZE];
+    size_t shape_size = make_test_shape(shape, sizeof(shape));
+
+    clear_video();
+    assert(wolf_native_sprite_scale(
+        &video, shape, shape_size, 160, 320, 200, 82, NULL, 82));
+    present_video();
+
+    /*
+     * The original BuildCompScale uses a 16.16 step of (82 << 16) / 64.
+     * Its generated per-source-column widths are therefore:
+     *   x=30: 1 pixel, x=31: 2, x=32..34: 1 each.
+     * The centre boundary remains exactly at screen x=160.
+     */
+    assert(framebuffer_pixels[60u * 320u + 157u] == 11);
+    assert(framebuffer_pixels[61u * 320u + 157u] == 22);
+    assert(framebuffer_pixels[62u * 320u + 157u] == 33);
+    assert(framebuffer_pixels[63u * 320u + 157u] == 33);
+
+    assert(framebuffer_pixels[60u * 320u + 158u] == 21);
+    assert(framebuffer_pixels[61u * 320u + 159u] == 22);
+    assert(framebuffer_pixels[62u * 320u + 158u] == 23);
+    assert(framebuffer_pixels[63u * 320u + 159u] == 23);
+
+    assert(framebuffer_pixels[60u * 320u + 160u] == 31);
+    assert(framebuffer_pixels[61u * 320u + 160u] == 32);
+    assert(framebuffer_pixels[62u * 320u + 160u] == 33);
+    assert(framebuffer_pixels[63u * 320u + 160u] == 33);
+
+    assert(framebuffer_pixels[59u * 320u + 161u] == 44);
+    assert(framebuffer_pixels[60u * 320u + 161u] == 0);
+    assert(framebuffer_pixels[65u * 320u + 161u] == 55);
+    assert(framebuffer_pixels[66u * 320u + 161u] == 66);
+
+    assert(framebuffer_pixels[60u * 320u + 162u] == 41);
+    assert(framebuffer_pixels[61u * 320u + 162u] == 42);
+    assert(framebuffer_pixels[62u * 320u + 162u] == 43);
+    assert(framebuffer_pixels[63u * 320u + 162u] == 43);
+}
+
 static void test_wall_occlusion(void)
 {
     uint8_t shape[TEST_SHAPE_SIZE];
@@ -227,6 +269,7 @@ int main(void)
         320));
 
     test_centre_out_offsets_and_multiple_posts();
+    test_fractional_scale_matches_compiled_width_table();
     test_wall_occlusion();
     test_horizontal_and_vertical_clipping();
     test_rejects_malformed_shape_data();
