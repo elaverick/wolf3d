@@ -3905,10 +3905,16 @@ void CheckForEpisodes(void)
 	if (!findfirst("*.WJ1",&f,FA_ARCH))
 	{
 		strcpy(extension,"WJ1");
+#ifdef WOLF3D_NATIVE
+		wolf_native_findclose(&f);
+#endif
 #else
 	if (!findfirst("*.WJ6",&f,FA_ARCH))
 	{
 		strcpy(extension,"WJ6");
+#ifdef WOLF3D_NATIVE
+		wolf_native_findclose(&f);
+#endif
 #endif
 		strcat(configname,extension);
 		strcat(SaveName,extension);
@@ -3933,6 +3939,9 @@ void CheckForEpisodes(void)
 	if (!findfirst("*.WL6",&f,FA_ARCH))
 	{
 		strcpy(extension,"WL6");
+#ifdef WOLF3D_NATIVE
+		wolf_native_findclose(&f);
+#endif
 		NewEmenu[2].active =
 		NewEmenu[4].active =
 		NewEmenu[6].active =
@@ -3948,6 +3957,9 @@ void CheckForEpisodes(void)
 	if (!findfirst("*.WL3",&f,FA_ARCH))
 	{
 		strcpy(extension,"WL3");
+#ifdef WOLF3D_NATIVE
+		wolf_native_findclose(&f);
+#endif
 		NewEmenu[2].active =
 		NewEmenu[4].active =
 		EpisodeSelect[1] =
@@ -3964,6 +3976,9 @@ void CheckForEpisodes(void)
 	if (!findfirst("*.SOD",&f,FA_ARCH))
 	{
 		strcpy(extension,"SOD");
+#ifdef WOLF3D_NATIVE
+		wolf_native_findclose(&f);
+#endif
 	}
 	else
 		Quit("NO SPEAR OF DESTINY DATA FILES TO BE FOUND!");
@@ -3971,6 +3986,9 @@ void CheckForEpisodes(void)
 	if (!findfirst("*.SDM",&f,FA_ARCH))
 	{
 		strcpy(extension,"SDM");
+#ifdef WOLF3D_NATIVE
+		wolf_native_findclose(&f);
+#endif
 	}
 	else
 		Quit("NO SPEAR OF DESTINY DEMO DATA FILES TO BE FOUND!");
@@ -3980,6 +3998,9 @@ void CheckForEpisodes(void)
 	if (!findfirst("*.WL1",&f,FA_ARCH))
 	{
 		strcpy(extension,"WL1");
+#ifdef WOLF3D_NATIVE
+		wolf_native_findclose(&f);
+#endif
 	}
 	else
 		Quit("NO WOLFENSTEIN 3-D DATA FILES to be found!");
