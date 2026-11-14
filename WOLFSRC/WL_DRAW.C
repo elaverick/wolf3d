@@ -259,7 +259,7 @@ void TransformActor (objtype *ob)
 	  return;
 	}
 
-	ob->viewx = centerx + ny*scale/nx;	// DEBUG: use assembly divide
+	ob->viewx = centerx + (fixed)(((int64_t)ny * scale) / nx);	// DEBUG: use assembly divide
 
 //
 // calculate height (heightnumerator/(nx>>8))
@@ -338,7 +338,7 @@ boolean TransformTile (int tx, int ty, int *dispx, int *dispheight)
 		return false;
 	}
 
-	*dispx = centerx + ny*scale/nx;	// DEBUG: use assembly divide
+	*dispx = centerx + (int)(((int64_t)ny * scale) / nx);	// DEBUG: use assembly divide
 
 //
 // calculate height (heightnumerator/(nx>>8))
@@ -1106,6 +1106,8 @@ unsigned vgaCeiling[]=
 
 void VGAClearScreen (void)
 {
+	unsigned ceiling = vgaCeiling[gamestate.episode * 10 + mapon];
+
 #ifdef WOLF3D_NATIVE
 	int view_left = 0;
 
