@@ -9,6 +9,10 @@ on:
       - master
       - windows-native-sdl3
 
+concurrency:
+  group: native-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   framebuffer-tests:
     name: Framebuffer tests (${{ matrix.os }})
