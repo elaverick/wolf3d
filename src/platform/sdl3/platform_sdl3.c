@@ -122,6 +122,7 @@ static int platform_scan_from_sdl(SDL_Scancode scancode)
         case SDL_SCANCODE_DELETE: return 0x53;
         case SDL_SCANCODE_F11: return 0x57;
         case SDL_SCANCODE_F12: return 0x59;
+        case SDL_SCANCODE_PAUSE: return 0x7f;
         case SDL_SCANCODE_RCTRL: return 0x1d;
         case SDL_SCANCODE_RALT: return 0x38;
         default: return 0;
