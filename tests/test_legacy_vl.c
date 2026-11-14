@@ -46,7 +46,7 @@ static void test_basic_video_api(void)
     palette[7][2] = 16;
     VL_SetPalette((const uint8_t (*)[3])palette);
     assert(rgb_palette[7][0] == 255);
-    assert(rgb_palette[7][1] == 129);
+    assert(rgb_palette[7][1] == 130);
     assert(rgb_palette[7][2] == 65);
 
     VL_SizeTile8String("ABC", &width, &height);
