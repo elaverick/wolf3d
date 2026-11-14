@@ -1,10 +1,10 @@
 /*
  * Native heap implementation of the original ID memory-manager API.
  *
- * The DOS manager exposed relocatable 16-byte paragraphs backed by
- * conventional/EMS/XMS memory. Native pointers are stable malloc allocations,
- * so compaction, EMS mapping and purge levels are deliberately unnecessary.
- * The API surface remains compatible with the original gameplay sources.
+ * Native pointers are stable malloc allocations, so compaction and EMS/XMS
+ * mapping are unnecessary. Purge and lock semantics are retained: the cache
+ * manager may mark graphics/audio chunks as purgeable, and those handles are
+ * cleared when memory pressure requires their storage to be reclaimed.
  */
 #include "ID_HEADS.H"
 
@@ -15,13 +15,18 @@
 
 typedef struct NativeAllocation {
     void *address;
+    memptr *handle;
     size_t size;
+    uint64_t last_touched;
+    unsigned purge_level;
+    boolean locked;
     struct NativeAllocation *next;
 } NativeAllocation;
 
 static NativeAllocation *allocations;
 static boolean memory_started;
 static boolean bomb_on_error = true;
+static uint64_t allocation_clock;
 
 mminfotype mminfo;
 memptr bufferseg;
@@ -29,38 +34,117 @@ boolean mmerror;
 void (*beforesort)(void);
 void (*aftersort)(void);
 
-static void register_allocation(void *address, size_t size)
+static NativeAllocation *find_allocation(void *address)
+{
+    NativeAllocation *entry;
+
+    for (entry = allocations; entry != NULL; entry = entry->next) {
+        if (entry->address == address) {
+            return entry;
+        }
+    }
+    return NULL;
+}
+
+static boolean register_allocation(
+    void *address, size_t size, memptr *handle)
 {
     NativeAllocation *entry = (NativeAllocation *)malloc(sizeof(*entry));
 
     if (entry == NULL) {
         free(address);
+        if (handle != NULL) {
+            *handle = NULL;
+        }
         Quit("Native memory manager: allocation tracking failed");
-        return;
+        return false;
     }
 
     entry->address = address;
+    entry->handle = handle;
     entry->size = size;
+    entry->last_touched = ++allocation_clock;
+    entry->purge_level = 0;
+    entry->locked = false;
     entry->next = allocations;
     allocations = entry;
+    return true;
 }
 
-static boolean release_allocation(void *address)
+static void release_entry(NativeAllocation **link)
+{
+    NativeAllocation *entry = *link;
+
+    *link = entry->next;
+    if (entry->handle != NULL && *entry->handle == entry->address) {
+        *entry->handle = NULL;
+    }
+    free(entry->address);
+    free(entry);
+}
+
+static boolean purge_one(unsigned purge_level)
 {
     NativeAllocation **cursor = &allocations;
+    NativeAllocation **oldest_link = NULL;
+    uint64_t oldest_time = UINT64_MAX;
 
     while (*cursor != NULL) {
         NativeAllocation *entry = *cursor;
-        if (entry->address == address) {
-            *cursor = entry->next;
-            free(entry->address);
-            free(entry);
-            return true;
+
+        if (!entry->locked &&
+            entry->purge_level == purge_level &&
+            entry->last_touched < oldest_time) {
+            oldest_time = entry->last_touched;
+            oldest_link = cursor;
         }
         cursor = &entry->next;
     }
 
-    return false;
+    if (oldest_link == NULL) {
+        return false;
+    }
+
+    release_entry(oldest_link);
+    return true;
+}
+
+/*
+ * Explicit native trim hook, also used by the allocator after malloc fails.
+ * Purge level 3 is the least important data; lower levels are reclaimed only
+ * after all higher-level candidates have been exhausted.
+ */
+void MM_Purge(void)
+{
+    unsigned level;
+
+    for (level = 3u; level > 0u; --level) {
+        while (purge_one(level)) {
+            /* Reclaim every eligible allocation at this level. */
+        }
+    }
+}
+
+static void *allocate_with_purge(size_t size)
+{
+    void *address;
+    unsigned level;
+
+    address = malloc(size);
+    if (address != NULL) {
+        return address;
+    }
+
+    for (level = 3u; level > 0u; --level) {
+        while (purge_one(level)) {
+            address = malloc(size);
+            if (address != NULL) {
+                return address;
+            }
+        }
+    }
+
+    return NULL;
 }
 
 void MM_Startup(void)
@@ -90,6 +174,10 @@ void MM_Shutdown(void)
 
     while (entry != NULL) {
         NativeAllocation *next = entry->next;
+
+        if (entry->handle != NULL && *entry->handle == entry->address) {
+            *entry->handle = NULL;
+        }
         free(entry->address);
         free(entry);
         entry = next;
@@ -99,6 +187,7 @@ void MM_Shutdown(void)
     bufferseg = NULL;
     memory_started = false;
     mmerror = false;
+    allocation_clock = 0;
 }
 
 void MM_MapEMS(void)
@@ -120,7 +209,7 @@ void MM_GetPtr(memptr *baseptr, unsigned long size)
         allocation_size = 1;
     }
 
-    address = malloc(allocation_size);
+    address = allocate_with_purge(allocation_size);
     if (address == NULL) {
         *baseptr = NULL;
         mmerror = true;
@@ -130,38 +219,71 @@ void MM_GetPtr(memptr *baseptr, unsigned long size)
         return;
     }
 
-    register_allocation(address, allocation_size);
+    if (!register_allocation(address, allocation_size, baseptr)) {
+        mmerror = true;
+        return;
+    }
+
     *baseptr = address;
     mmerror = false;
 }
 
 void MM_FreePtr(memptr *baseptr)
 {
+    NativeAllocation **cursor;
+
     if (baseptr == NULL || *baseptr == NULL) {
         return;
     }
 
-    if (!release_allocation(*baseptr)) {
-        /* All memory returned by MM_GetPtr is tracked. Do not double free. */
-        Quit("Native memory manager: untracked pointer released");
-        return;
+    cursor = &allocations;
+    while (*cursor != NULL) {
+        if ((*cursor)->address == *baseptr) {
+            release_entry(cursor);
+            *baseptr = NULL;
+            return;
+        }
+        cursor = &(*cursor)->next;
     }
 
-    *baseptr = NULL;
+    /* All memory returned by MM_GetPtr is tracked. Do not double free. */
+    Quit("Native memory manager: untracked pointer released");
 }
 
 void MM_SetPurge(memptr *baseptr, int purge)
 {
-    (void)baseptr;
-    (void)purge;
-    /* Stable native allocations are retained until explicit release. */
+    NativeAllocation *entry;
+
+    if (baseptr == NULL || *baseptr == NULL) {
+        return;
+    }
+
+    entry = find_allocation(*baseptr);
+    if (entry == NULL || entry->handle != baseptr) {
+        return;
+    }
+
+    if (purge < 0) purge = 0;
+    if (purge > 3) purge = 3;
+    entry->purge_level = (unsigned)purge;
+    entry->last_touched = ++allocation_clock;
 }
 
 void MM_SetLock(memptr *baseptr, boolean locked)
 {
-    (void)baseptr;
-    (void)locked;
-    /* A stable native allocation cannot be moved or purged implicitly. */
+    NativeAllocation *entry;
+
+    if (baseptr == NULL || *baseptr == NULL) {
+        return;
+    }
+
+    entry = find_allocation(*baseptr);
+    if (entry == NULL || entry->handle != baseptr) {
+        return;
+    }
+
+    entry->locked = locked;
+    entry->last_touched = ++allocation_clock;
 }
 
 void MM_SortMem(void)
@@ -180,14 +302,18 @@ void MM_ShowMemory(void)
     NativeAllocation *entry;
     size_t allocation_count = 0;
     size_t allocated_bytes = 0;
+    size_t purgeable_bytes = 0;
 
     for (entry = allocations; entry != NULL; entry = entry->next) {
         ++allocation_count;
         allocated_bytes += entry->size;
+        if (!entry->locked && entry->purge_level != 0) {
+            purgeable_bytes += entry->size;
+        }
     }
 
-    printf("Native heap: %zu allocations, %zu bytes\n",
-        allocation_count, allocated_bytes);
+    printf("Native heap: %zu allocations, %zu bytes (%zu purgeable)\n",
+        allocation_count, allocated_bytes, purgeable_bytes);
 }
 
 long MM_UnusedMemory(void)
