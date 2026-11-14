@@ -52,28 +52,27 @@ static void test_rejects_short_or_invalid_streams(void)
 {
     WolfNativeHuffmanNode table[WOLF_NATIVE_HUFFMAN_NODE_COUNT] = {{0}};
     const uint8_t one_bit[] = {0x01};
-    uint8_t two_bytes[2] = {0};
+    uint8_t output[9] = {0};
 
     table[254].bit0 = 'A';
     table[254].bit1 = 256;
     table[0].bit0 = 'B';
 
-    /* The second bit selects an invalid leaf node. */
     /* The second bit selects an out-of-range child node (node 255). */
     table[0].bit0 = 511;
     assert(!wolf_native_huffman_expand(
-        one_bit, sizeof(one_bit), two_bytes, 2,
+        one_bit, sizeof(one_bit), output, 2,
         table, WOLF_NATIVE_HUFFMAN_NODE_COUNT));
 
-    /* A valid stream cannot expand beyond the caller-provided buffer. */
+    /* Eight literal bits are not enough to produce the requested ninth byte. */
     table[254].bit1 = 'C';
     table[254].bit0 = 'A';
     assert(!wolf_native_huffman_expand(
-        one_bit, sizeof(one_bit), two_bytes, 9,
+        one_bit, sizeof(one_bit), output, sizeof(output),
         table, WOLF_NATIVE_HUFFMAN_NODE_COUNT));
 
     assert(!wolf_native_huffman_expand(
-        one_bit, sizeof(one_bit), two_bytes, 1,
+        one_bit, sizeof(one_bit), output, 1,
         table, WOLF_NATIVE_HUFFMAN_NODE_COUNT - 1u));
 
     assert(!wolf_native_huffman_expand(
