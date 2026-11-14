@@ -1381,7 +1381,9 @@ void Quit(char *error)
         exit(1);
     }
 
-    /* Native shutdown is owned by process teardown; no DOS text-mode screen. */
+    /* Preserve the original clean-exit behaviour without DOS screen I/O. */
+    WriteConfig();
+    ShutdownId();
     exit(0);
 }
 #else

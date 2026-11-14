@@ -16,6 +16,16 @@
 
 void WolfMain(void);
 
+static WolfPlatform *platform_at_exit;
+
+static void shutdown_platform_at_exit(void)
+{
+    if (platform_at_exit != NULL) {
+        wolf_platform_destroy(platform_at_exit);
+        platform_at_exit = NULL;
+    }
+}
+
 static bool present_frame(const uint8_t *pixels, int pitch,
     const uint8_t palette[256][3], void *userdata)
 {
@@ -122,10 +132,16 @@ int main(int argc, char **argv)
         fputs("Unable to initialise the SDL3 game window.\n", stderr);
         return 1;
     }
+    platform_at_exit = platform;
+    if (atexit(shutdown_platform_at_exit) != 0) {
+        fputs("Unable to register SDL3 shutdown handler.\n", stderr);
+        shutdown_platform_at_exit();
+        return 1;
+    }
     if (!wolf_legacy_video_init(&video, vga_storage, sizeof(vga_storage),
             framebuffer, sizeof(framebuffer), 320u)) {
         fputs("Unable to initialise the software VGA framebuffer.\n", stderr);
-        wolf_platform_destroy(platform);
+        shutdown_platform_at_exit();
         return 1;
     }
     wolf_legacy_video_set_present_callback(&video, present_frame, platform);
@@ -135,6 +151,6 @@ int main(int argc, char **argv)
     WolfMain();
 
     VL_Shutdown();
-    wolf_platform_destroy(platform);
+    shutdown_platform_at_exit();
     return 0;
 }
