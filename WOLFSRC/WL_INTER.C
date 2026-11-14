@@ -67,7 +67,7 @@ void EndSpear(void)
 	VW_UpdateScreen ();
 	IN_StartAck ();
 	WOLF_SET_TIMECNT(0);
-	while (!IN_CheckAck () && TimeCount < 700);
+	while (!IN_CheckAck () && WOLF_GET_TIMECNT() < 700);
 
 	PrintX = 0;
 	PrintY = 180;
@@ -77,7 +77,7 @@ void EndSpear(void)
 	VW_UpdateScreen ();
 	IN_StartAck ();
 	WOLF_SET_TIMECNT(0);
-	while (!IN_CheckAck () && TimeCount < 700);
+	while (!IN_CheckAck () && WOLF_GET_TIMECNT() < 700);
 
 	VW_FadeOut ();
 
@@ -395,7 +395,7 @@ void BJ_Breathe(void)
 	int pics[2]={L_GUYPIC,L_GUY2PIC};
 
 
-	if (TimeCount>max)
+	if (WOLF_GET_TIMECNT()>max)
 	{
 		which^=1;
 		VWB_DrawPic(0,16,pics[which]);
