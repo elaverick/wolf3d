@@ -316,6 +316,13 @@ void VL_MemToLatch(
     }
 }
 
+void VL_ScreenToScreen(
+    unsigned source, unsigned destination, int width, int height)
+{
+    (void)wolf_legacy_video_screen_to_screen(
+        get_video(), source, destination, width, height);
+}
+
 void VL_LatchToScreen(
     unsigned source, int width_bytes, int height, int x, int y)
 {
