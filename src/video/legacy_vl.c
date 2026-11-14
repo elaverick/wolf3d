@@ -36,6 +36,11 @@ static WolfLegacyVideo *get_video(void)
         VL_Startup();
     }
 
+    if (active_video != NULL) {
+        wolf_legacy_video_set_draw_page(active_video, bufferofs);
+        wolf_legacy_video_set_display_page(active_video, displayofs);
+    }
+
     return active_video;
 }
 
