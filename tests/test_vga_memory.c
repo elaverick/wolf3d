@@ -80,6 +80,48 @@ static void test_planar_pages_and_primitives(void)
         &memory, PAGE_OFFSET, 0, 0, 4, 2, planar, sizeof(planar) - 1));
 }
 
+static void test_wall_post_scaling(void)
+{
+    WolfVgaMemory memory;
+    WolfFramebuffer output;
+    uint8_t source[4] = {10, 20, 30, 40};
+
+    memset(storage, 0, sizeof(storage));
+    memset(output_pixels, 0xee, sizeof(output_pixels));
+
+    assert(wolf_vga_memory_init(
+        &memory, storage, sizeof(storage), PLANE_SIZE, STRIDE, HEIGHT));
+    assert(wolf_framebuffer_init(
+        &output, WIDTH, HEIGHT, 20, output_pixels, sizeof(output_pixels)));
+
+    assert(wolf_vga_memory_scale_post(
+        &memory, PAGE_OFFSET, 4, 0, 4, 2,
+        source, sizeof(source), 4, 2));
+    assert(wolf_vga_memory_present(&memory, PAGE_OFFSET, &output));
+
+    assert(output_pixels[4] == 0);
+    assert(output_pixels[20 + 4] == 20);
+    assert(output_pixels[20 + 5] == 20);
+    assert(output_pixels[40 + 4] == 40);
+    assert(output_pixels[40 + 5] == 40);
+    assert(output_pixels[60 + 4] == 0);
+
+    wolf_vga_memory_clear(&memory, 0);
+    assert(wolf_vga_memory_scale_post(
+        &memory, PAGE_OFFSET, 4, 0, 4, 2,
+        source, sizeof(source), 4, 8));
+    assert(wolf_vga_memory_present(&memory, PAGE_OFFSET, &output));
+
+    assert(output_pixels[4] == 20);
+    assert(output_pixels[20 + 4] == 20);
+    assert(output_pixels[40 + 4] == 30);
+    assert(output_pixels[60 + 4] == 30);
+
+    assert(!wolf_vga_memory_scale_post(
+        &memory, PAGE_OFFSET, 4, 0, 4, 2,
+        source, sizeof(source) - 1, 4, 8));
+}
+
 static void test_latch_memory(void)
 {
     WolfVgaMemory memory;
@@ -116,6 +158,7 @@ int main(void)
     test_initialisation();
     test_planar_pages_and_primitives();
     test_latch_memory();
+    test_wall_post_scaling();
 
     puts("software VGA memory tests passed");
     return 0;
