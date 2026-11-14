@@ -289,7 +289,7 @@ if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
             ${CMAKE_CURRENT_SOURCE_DIR}/src/video
             ${CMAKE_CURRENT_SOURCE_DIR}/src/platform
     )
-    target_compile_definitions(wolf3d_game_objects PRIVATE WOLF3D_NATIVE)
+    target_compile_definitions(wolf3d_game_objects PRIVATE WOLF3D_NATIVE WOLF3D_NATIVE_GAME)
     target_link_libraries(wolf3d_game_objects
         PRIVATE
             wolf3d_legacy_vl

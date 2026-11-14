@@ -492,6 +492,15 @@ word IN_GetJoyButtonsDB(word joy)
     return 0;
 }
 
+#ifndef WOLF3D_NATIVE_GAME
+byte *IN_GetScanName(ScanCode scan_code)
+{
+    static byte name[8];
+    (void)snprintf((char *)name, sizeof(name), "0x%02X", (unsigned)scan_code);
+    return name;
+}
+#endif
+
 byte IN_MouseButtons(void)
 {
     return MousePresent ? (byte)get_mouse_buttons() : 0;
