@@ -256,6 +256,7 @@ bool wolf_vga_memory_copy_page(
     int width_bytes,
     int height)
 {
+    size_t row_delta;
     size_t source_last_row;
     size_t destination_last_row;
     int row_start = 0;
@@ -277,14 +278,18 @@ bool wolf_vga_memory_copy_page(
         return false;
     }
 
-    source_last_row =
-        source_offset + (size_t)(height - 1) * (size_t)memory->stride_bytes;
-    destination_last_row =
-        destination_offset + (size_t)(height - 1) * (size_t)memory->stride_bytes;
+    row_delta =
+        (size_t)(height - 1) * (size_t)memory->stride_bytes;
 
-    if (source_last_row > memory->plane_size ||
-        destination_last_row > memory->plane_size ||
-        (size_t)width_bytes > memory->plane_size - source_last_row ||
+    if (row_delta > memory->plane_size - source_offset ||
+        row_delta > memory->plane_size - destination_offset) {
+        return false;
+    }
+
+    source_last_row = source_offset + row_delta;
+    destination_last_row = destination_offset + row_delta;
+
+    if ((size_t)width_bytes > memory->plane_size - source_last_row ||
         (size_t)width_bytes > memory->plane_size - destination_last_row) {
         return false;
     }
