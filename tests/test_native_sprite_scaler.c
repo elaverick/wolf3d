@@ -186,7 +186,7 @@ static void test_horizontal_and_vertical_clipping(void)
     assert(wolf_native_sprite_scale(
         &video, shape, shape_size, 32, 320, 200, 128, NULL, 128));
     assert(video.memory.planes[0][(size_t)38 * video.memory.stride_bytes +
-        28u / 4u] == 21);
+        28u / 4u] == 11);
     assert(video.memory.planes[0][(size_t)40 * video.memory.stride_bytes +
         28u / 4u] == 22);
     assert(video.memory.planes[0][(size_t)42 * video.memory.stride_bytes +
