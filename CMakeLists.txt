@@ -153,7 +153,6 @@ if(BUILD_TESTING)
     add_executable(test_native_input
         tests/test_native_input.c
         src/platform/native_input.c
-        src/video/native_raycaster.c
     )
 
     target_include_directories(test_native_input
@@ -187,6 +186,7 @@ if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
         WOLFSRC/WL_STATE.C
         WOLFSRC/WL_TEXT.C
         src/platform/native_input.c
+        src/video/native_raycaster.c
     )
 
     # Uppercase .C is normally treated as C++ by CMake on Unix.
