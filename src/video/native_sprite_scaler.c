@@ -3,12 +3,44 @@
 #include <stdint.h>
 
 #define SPRITE_SOURCE_SIZE 64u
-#define SPRITE_FIXED_HEADER_SIZE 4u
-#define SPRITE_COLUMN_ENTRY_SIZE 2u
+#define SPRITE_COLUMN_COUNT 64u
+#define SPRITE_HEADER_SIZE (4u + SPRITE_COLUMN_COUNT * sizeof(uint16_t))
 
 static uint16_t read_u16_le(const uint8_t *bytes)
 {
     return (uint16_t)((uint16_t)bytes[0] | ((uint16_t)bytes[1] << 8));
+}
+
+static unsigned column_slot(unsigned source_x, unsigned left_pixel)
+{
+    /*
+     * t_compshape::dataofs is not stored in left-to-right order.
+     * The original ScaleShape walks x=31..leftpix, then x=32..rightpix.
+     * The same slot mapping lets this implementation draw left-to-right
+     * without changing the on-disk sprite representation.
+     */
+    if (source_x <= 31u) {
+        return 31u - source_x;
+    }
+    return source_x - left_pixel;
+}
+
+static size_t next_column_offset(
+    const uint16_t offsets[SPRITE_COLUMN_COUNT],
+    unsigned slot,
+    size_t shape_size)
+{
+    unsigned next_slot;
+
+    for (next_slot = slot + 1u;
+         next_slot < SPRITE_COLUMN_COUNT;
+         ++next_slot) {
+        if (offsets[next_slot] != 0) {
+            return offsets[next_slot];
+        }
+    }
+
+    return shape_size;
 }
 
 bool wolf_native_sprite_scale(
@@ -24,15 +56,16 @@ bool wolf_native_sprite_scale(
 {
     unsigned left_pixel;
     unsigned right_pixel;
-    size_t column_count;
-    size_t header_size;
-    size_t pixel_pool_end;
-    size_t column_index;
+    uint16_t column_offsets[SPRITE_COLUMN_COUNT];
+    size_t pixel_pool_end = shape_size;
+    size_t previous_offset = 0;
+    unsigned slot;
     int sprite_half_height;
     int top;
+    unsigned source_x;
 
     if (video == NULL || shape == NULL ||
-        shape_size < SPRITE_FIXED_HEADER_SIZE ||
+        shape_size < SPRITE_HEADER_SIZE ||
         view_width <= 0 || view_height <= 0 ||
         destination_height <= 0 || (destination_height & 1) != 0 ||
         view_width > video->memory.stride_bytes * 4 ||
@@ -46,64 +79,56 @@ bool wolf_native_sprite_scale(
         return false;
     }
 
-    column_count = (size_t)(right_pixel - left_pixel) + 1u;
-    if (column_count > (SIZE_MAX - SPRITE_FIXED_HEADER_SIZE) /
-            SPRITE_COLUMN_ENTRY_SIZE) {
-        return false;
-    }
-
-    header_size = SPRITE_FIXED_HEADER_SIZE +
-        column_count * SPRITE_COLUMN_ENTRY_SIZE;
-    if (header_size > shape_size) {
-        return false;
-    }
-
-    /* The first column's post offset marks the end of the packed pixel pool. */
-    pixel_pool_end = shape_size;
-    for (column_index = 0; column_index < column_count; ++column_index) {
+    for (slot = 0; slot < SPRITE_COLUMN_COUNT; ++slot) {
         size_t offset = read_u16_le(
-            shape + SPRITE_FIXED_HEADER_SIZE +
-            column_index * SPRITE_COLUMN_ENTRY_SIZE);
+            shape + 4u + (size_t)slot * sizeof(uint16_t));
 
-        if (offset < header_size || offset > shape_size - sizeof(uint16_t)) {
-            return false;
-        }
-        if (column_index > 0) {
-            size_t previous = read_u16_le(
-                shape + SPRITE_FIXED_HEADER_SIZE +
-                (column_index - 1u) * SPRITE_COLUMN_ENTRY_SIZE);
-            if (offset <= previous) {
+        if (offset != 0) {
+            if (offset < SPRITE_HEADER_SIZE ||
+                offset > shape_size - sizeof(uint16_t) ||
+                offset <= previous_offset) {
                 return false;
             }
+            previous_offset = offset;
+            if (offset < pixel_pool_end) {
+                pixel_pool_end = offset;
+            }
         }
-        if (offset < pixel_pool_end) {
-            pixel_pool_end = offset;
-        }
+        column_offsets[slot] = (uint16_t)offset;
     }
 
-    if (pixel_pool_end < header_size) {
+    if (pixel_pool_end < SPRITE_HEADER_SIZE) {
         return false;
     }
 
     sprite_half_height = destination_height / 2;
     top = view_height / 2 - sprite_half_height;
 
-    for (column_index = 0; column_index < column_count; ++column_index) {
-        size_t column_offset = read_u16_le(
-            shape + SPRITE_FIXED_HEADER_SIZE +
-            column_index * SPRITE_COLUMN_ENTRY_SIZE);
-        size_t column_end = column_index + 1u < column_count
-            ? (size_t)read_u16_le(
-                shape + SPRITE_FIXED_HEADER_SIZE +
-                (column_index + 1u) * SPRITE_COLUMN_ENTRY_SIZE)
-            : shape_size;
-        unsigned source_x = left_pixel + (unsigned)column_index;
+    for (source_x = left_pixel; source_x <= right_pixel; ++source_x) {
+        unsigned column_index = column_slot(source_x, left_pixel);
+        size_t column_offset;
+        size_t column_end;
         int64_t left_edge;
         int64_t right_edge;
         int screen_left;
         int screen_right;
         int screen_x;
-        size_t post_cursor = column_offset;
+        size_t post_cursor;
+
+        if (column_index >= SPRITE_COLUMN_COUNT) {
+            return false;
+        }
+
+        column_offset = column_offsets[column_index];
+        if (column_offset == 0) {
+            continue;
+        }
+
+        column_end = next_column_offset(
+            column_offsets, column_index, shape_size);
+        if (column_end <= column_offset || column_end > shape_size) {
+            return false;
+        }
 
         left_edge = (int64_t)x_center - sprite_half_height +
             ((int64_t)source_x * destination_height) /
@@ -120,6 +145,7 @@ bool wolf_native_sprite_scale(
         screen_left = (int)left_edge;
         screen_right = (int)right_edge;
 
+        post_cursor = column_offset;
         for (;;) {
             uint16_t end_word;
             uint16_t virtual_top;
@@ -156,13 +182,14 @@ bool wolf_native_sprite_scale(
             }
 
             /*
-             * The middle post word is the virtual source-line base, not the
-             * first pixel address. WL_SCALE.C loads [SI+source_y], with SI
-             * taken directly from this field.
+             * ScaleLine sets SI to the post's virtual-top word and generated
+             * code reads [SI + source_y]. The post's pixel bytes are therefore
+             * addressed by virtual_top + source_y, not by a compact run index.
              */
             pixel_start = (size_t)virtual_top + start_y;
             pixel_end = (size_t)virtual_top + end_y;
-            if (pixel_start < header_size || pixel_end > pixel_pool_end) {
+            if (pixel_start < SPRITE_HEADER_SIZE ||
+                pixel_end > pixel_pool_end) {
                 return false;
             }
 
