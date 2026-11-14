@@ -1004,7 +1004,12 @@ extern	fixed	viewx,viewy;			// the focal point
 extern	int		viewangle;
 extern	fixed	viewsin,viewcos;
 
+#ifdef WOLF3D_NATIVE
+extern	byte		*postpage;
+extern	unsigned	posttexture;
+#else
 extern	long		postsource;
+#endif
 extern	unsigned	postx;
 extern	unsigned	postwidth;
 
