@@ -8,8 +8,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#define SHAPE_HEADER_SIZE (4u + 64u * 2u)
 #define VGA_STORAGE_SIZE (WOLF_VGA_LEGACY_PLANE_SIZE * WOLF_VGA_PLANE_COUNT)
+#define TEST_SHAPE_SIZE 36u
+#define TEST_POSTS_COLUMN_0 14u
+#define TEST_POSTS_COLUMN_1 22u
 
 static uint8_t vga_storage[VGA_STORAGE_SIZE];
 static uint8_t framebuffer_pixels[320u * 200u];
@@ -21,28 +23,40 @@ static void write_u16_le(uint8_t *bytes, uint16_t value)
     bytes[1] = (uint8_t)(value >> 8);
 }
 
+/* Two columns, six packed pixels and two independent post lists. */
 static size_t make_test_shape(uint8_t *shape, size_t capacity)
 {
-    const size_t column = SHAPE_HEADER_SIZE;
-    const size_t pixels = 256;
-
-    assert(capacity >= pixels + 64u);
+    assert(capacity >= TEST_SHAPE_SIZE);
     memset(shape, 0, capacity);
 
     write_u16_le(shape, 0);
-    write_u16_le(shape + 2, 0);
-    write_u16_le(shape + 4, (uint16_t)column);
+    write_u16_le(shape + 2, 1);
+    write_u16_le(shape + 4, TEST_POSTS_COLUMN_0);
+    write_u16_le(shape + 6, TEST_POSTS_COLUMN_1);
 
-    /* One opaque post covering source rows [1, 4). */
-    write_u16_le(shape + column, 8);
-    write_u16_le(shape + column + 2, (uint16_t)pixels);
-    write_u16_le(shape + column + 4, 2);
-    write_u16_le(shape + column + 6, 0);
+    shape[8] = 11;
+    shape[9] = 22;
+    shape[10] = 33;
+    shape[11] = 44;
+    shape[12] = 55;
+    shape[13] = 66;
 
-    shape[pixels + 1] = 11;
-    shape[pixels + 2] = 22;
-    shape[pixels + 3] = 33;
-    return pixels + 64u;
+    /* Column 0: rows [1, 4), virtual top 7 means pixel bytes at [8, 11). */
+    write_u16_le(shape + TEST_POSTS_COLUMN_0, 8);
+    write_u16_le(shape + TEST_POSTS_COLUMN_0 + 2, 7);
+    write_u16_le(shape + TEST_POSTS_COLUMN_0 + 4, 2);
+    write_u16_le(shape + TEST_POSTS_COLUMN_0 + 6, 0);
+
+    /* Column 1: row 0, then rows [5, 7), pixel bytes at [11, 12), [12, 14). */
+    write_u16_le(shape + TEST_POSTS_COLUMN_1, 2);
+    write_u16_le(shape + TEST_POSTS_COLUMN_1 + 2, 11);
+    write_u16_le(shape + TEST_POSTS_COLUMN_1 + 4, 0);
+    write_u16_le(shape + TEST_POSTS_COLUMN_1 + 6, 14);
+    write_u16_le(shape + TEST_POSTS_COLUMN_1 + 8, 7);
+    write_u16_le(shape + TEST_POSTS_COLUMN_1 + 10, 10);
+    write_u16_le(shape + TEST_POSTS_COLUMN_1 + 12, 0);
+
+    return TEST_SHAPE_SIZE;
 }
 
 static void clear_video(void)
@@ -50,31 +64,42 @@ static void clear_video(void)
     wolf_legacy_video_clear(&video, 0);
 }
 
-static void test_one_to_one_sprite_post(void)
+static void present_video(void)
 {
-    uint8_t shape[320];
     WolfFramebuffer output;
-    size_t shape_size = make_test_shape(shape, sizeof(shape));
 
-    clear_video();
-    assert(wolf_native_sprite_scale(
-        &video, shape, shape_size, 160, 320, 200, 64, NULL, 64));
     assert(wolf_framebuffer_init(
         &output, 320, 200, 320,
         framebuffer_pixels, sizeof(framebuffer_pixels)));
     assert(wolf_vga_memory_present(
         &video.memory, video.draw_page_offset, &output));
+}
+
+static void test_pixel_pool_and_multiple_posts(void)
+{
+    uint8_t shape[TEST_SHAPE_SIZE];
+    size_t shape_size = make_test_shape(shape, sizeof(shape));
+
+    clear_video();
+    assert(wolf_native_sprite_scale(
+        &video, shape, shape_size, 160, 320, 200, 64, NULL, 64));
+    present_video();
 
     assert(framebuffer_pixels[68u * 320u + 128u] == 0);
     assert(framebuffer_pixels[69u * 320u + 128u] == 11);
     assert(framebuffer_pixels[70u * 320u + 128u] == 22);
     assert(framebuffer_pixels[71u * 320u + 128u] == 33);
     assert(framebuffer_pixels[72u * 320u + 128u] == 0);
+
+    assert(framebuffer_pixels[68u * 320u + 129u] == 44);
+    assert(framebuffer_pixels[69u * 320u + 129u] == 0);
+    assert(framebuffer_pixels[73u * 320u + 129u] == 55);
+    assert(framebuffer_pixels[74u * 320u + 129u] == 66);
 }
 
 static void test_wall_occlusion(void)
 {
-    uint8_t shape[320];
+    uint8_t shape[TEST_SHAPE_SIZE];
     unsigned wall_height[320];
     size_t shape_size = make_test_shape(shape, sizeof(shape));
 
@@ -98,28 +123,35 @@ static void test_wall_occlusion(void)
 
 static void test_horizontal_and_vertical_clipping(void)
 {
-    uint8_t shape[320];
+    uint8_t shape[TEST_SHAPE_SIZE];
     size_t shape_size = make_test_shape(shape, sizeof(shape));
 
     clear_video();
     assert(wolf_native_sprite_scale(
         &video, shape, shape_size, 64, 320, 200, 128, NULL, 128));
     assert(video.memory.planes[0][(size_t)38 * video.memory.stride_bytes] == 11);
-    assert(video.memory.planes[0][(size_t)39 * video.memory.stride_bytes] == 11);
+    assert(video.memory.planes[0][(size_t)40 * video.memory.stride_bytes] == 22);
+    assert(video.memory.planes[0][(size_t)42 * video.memory.stride_bytes] == 33);
 }
 
 static void test_rejects_malformed_shape_data(void)
 {
-    uint8_t shape[320];
+    uint8_t shape[TEST_SHAPE_SIZE];
     size_t shape_size = make_test_shape(shape, sizeof(shape));
 
-    write_u16_le(shape + SHAPE_HEADER_SIZE, 130);
+    write_u16_le(shape + TEST_POSTS_COLUMN_0, 130);
     clear_video();
     assert(!wolf_native_sprite_scale(
         &video, shape, shape_size, 160, 320, 200, 64, NULL, 64));
 
-    write_u16_le(shape + SHAPE_HEADER_SIZE, 8);
-    write_u16_le(shape + SHAPE_HEADER_SIZE + 2, 319);
+    make_test_shape(shape, sizeof(shape));
+    write_u16_le(shape + TEST_POSTS_COLUMN_0 + 2, 0);
+    clear_video();
+    assert(!wolf_native_sprite_scale(
+        &video, shape, shape_size, 160, 320, 200, 64, NULL, 64));
+
+    make_test_shape(shape, sizeof(shape));
+    write_u16_le(shape + TEST_POSTS_COLUMN_0 + 6, 8);
     clear_video();
     assert(!wolf_native_sprite_scale(
         &video, shape, shape_size, 160, 320, 200, 64, NULL, 64));
@@ -135,7 +167,7 @@ int main(void)
         sizeof(framebuffer_pixels),
         320));
 
-    test_one_to_one_sprite_post();
+    test_pixel_pool_and_multiple_posts();
     test_wall_occlusion();
     test_horizontal_and_vertical_clipping();
     test_rejects_malformed_shape_data();
