@@ -29,6 +29,12 @@ static void delay_video(uint32_t milliseconds, void *userdata)
     wolf_platform_delay_ms(milliseconds);
 }
 
+static void delay_with_platform(uint32_t milliseconds, void *userdata)
+{
+    (void)userdata;
+    wolf_platform_delay_ms(milliseconds);
+}
+
 static void draw_test_scene(void)
 {
     uint8_t wall_column[64];
