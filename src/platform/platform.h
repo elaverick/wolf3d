@@ -43,6 +43,9 @@ bool wolf_platform_present_indexed(
 /* Monotonic time in milliseconds. */
 uint64_t wolf_platform_time_ms(void);
 
+/* Sleep for at least the requested number of milliseconds. */
+void wolf_platform_delay_ms(uint32_t milliseconds);
+
 /* Release all platform resources. Safe to call with NULL. */
 void wolf_platform_destroy(WolfPlatform *platform);
 
