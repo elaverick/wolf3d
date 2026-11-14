@@ -476,7 +476,7 @@ void US_ControlPanel(byte scancode)
 					if (SoundMode != sdm_Off)
 						for (i=0;i<NUMSOUNDS;i++,start++)
 							if (audiosegs[start])
-								MM_SetPurge (&(memptr)audiosegs[start],3);		// make purgable
+								MM_SetPurge (&audiosegs[start],3);		// make purgable
 				}
 				#endif
 
@@ -3768,7 +3768,7 @@ void StartCPMusic(int song)
 	musicnames	chunk;
 
 	if (audiosegs[STARTMUSIC + lastmusic])	// JDC
-		MM_FreePtr ((memptr *)&audiosegs[STARTMUSIC + lastmusic]);
+		MM_FreePtr (&audiosegs[STARTMUSIC + lastmusic]);
 	lastmusic = song;
 
 	SD_MusicOff();
@@ -3781,7 +3781,7 @@ void StartCPMusic(int song)
 		mmerror = false;
 	else
 	{
-		MM_SetLock(&((memptr)audiosegs[STARTMUSIC + chunk]),true);
+		MM_SetLock(&audiosegs[STARTMUSIC + chunk],true);
 		SD_StartMusic((MusicGroup far *)audiosegs[STARTMUSIC + chunk]);
 	}
 }
