@@ -18,6 +18,7 @@ struct WolfPlatform {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *frame_texture;
+    SDL_AudioStream *audio_stream;
     int framebuffer_width;
     int framebuffer_height;
     uint32_t *rgba_pixels;
@@ -178,6 +179,11 @@ static void update_mouse_position(
 
 static void destroy_video_resources(WolfPlatform *platform)
 {
+    if (platform->audio_stream != NULL) {
+        SDL_DestroyAudioStream(platform->audio_stream);
+        platform->audio_stream = NULL;
+    }
+
     if (platform->frame_texture != NULL) {
         SDL_DestroyTexture(platform->frame_texture);
     }
@@ -249,6 +255,22 @@ WolfPlatform *wolf_platform_create(const WolfPlatformConfig *config)
         free(platform->rgba_pixels);
         free(platform);
         return NULL;
+    }
+
+    /*
+     * Audio is optional: a missing playback device must not prevent the
+     * original game from starting. SDL owns device lifetime through stream.
+     */
+    if (SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+        SDL_AudioSpec audio_spec = { SDL_AUDIO_S16, 1, 22050 };
+
+        platform->audio_stream = SDL_OpenAudioDeviceStream(
+            SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &audio_spec, NULL, NULL);
+        if (platform->audio_stream != NULL &&
+            !SDL_ResumeAudioStreamDevice(platform->audio_stream)) {
+            SDL_DestroyAudioStream(platform->audio_stream);
+            platform->audio_stream = NULL;
+        }
     }
 
     platform->window = SDL_CreateWindow(
@@ -538,6 +560,42 @@ void wolf_platform_mouse_command(
         default:
             break;
     }
+}
+
+bool wolf_platform_audio_submit(const int16_t *samples, size_t sample_count)
+{
+    WolfPlatform *platform = active_platform;
+    size_t byte_count;
+
+    if (platform == NULL || platform->audio_stream == NULL ||
+        (samples == NULL && sample_count != 0) ||
+        sample_count > (size_t)INT_MAX / sizeof(*samples)) {
+        return false;
+    }
+
+    byte_count = sample_count * sizeof(*samples);
+    if (byte_count == 0) {
+        return true;
+    }
+
+    return SDL_PutAudioStreamData(
+        platform->audio_stream, samples, (int)byte_count);
+}
+
+void wolf_platform_audio_clear(void)
+{
+    if (active_platform != NULL && active_platform->audio_stream != NULL) {
+        (void)SDL_ClearAudioStream(active_platform->audio_stream);
+    }
+}
+
+int wolf_platform_audio_queued_bytes(void)
+{
+    if (active_platform == NULL || active_platform->audio_stream == NULL) {
+        return -1;
+    }
+
+    return SDL_GetAudioStreamQueued(active_platform->audio_stream);
 }
 
 void wolf_platform_destroy(WolfPlatform *platform)

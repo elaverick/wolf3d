@@ -59,6 +59,15 @@ void wolf_platform_mouse_command(
     int *cx,
     int *dx);
 
+/* Queue mono signed 16-bit PCM samples. The stream copies the data. */
+bool wolf_platform_audio_submit(const int16_t *samples, size_t sample_count);
+
+/* Discard pending playback, used when a higher-priority effect interrupts. */
+void wolf_platform_audio_clear(void);
+
+/* Number of bytes queued for playback, or -1 when audio is unavailable. */
+int wolf_platform_audio_queued_bytes(void);
+
 /* Release all platform resources. Safe to call with NULL. */
 void wolf_platform_destroy(WolfPlatform *platform);
 
