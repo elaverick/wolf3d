@@ -170,6 +170,11 @@ void VL_CrtcStart(int crtc)
     }
 }
 
+void VL_SetCRTC(int crtc)
+{
+    VL_CrtcStart(crtc);
+}
+
 void VL_SetScreen(int crtc, int horizontal_pan)
 {
     WolfLegacyVideo *video = get_video();
