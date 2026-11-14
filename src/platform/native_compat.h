@@ -116,6 +116,7 @@
 
 typedef struct ffblk {
     char ff_name[260];
+    int active;
 #ifdef _WIN32
     void *handle;
     void *find_data;
@@ -127,6 +128,7 @@ typedef struct ffblk {
 
 int findfirst(const char *pattern, struct ffblk *entry, int attributes);
 int findnext(struct ffblk *entry);
+void wolf_native_findclose(struct ffblk *entry);
 
 int _dos_write(int handle, const void *buffer, unsigned count, unsigned *written);
 long wolf_native_filelength(int handle);
