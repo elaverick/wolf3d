@@ -53,6 +53,16 @@ jobs:
         if: runner.os == 'Windows'
         run: cmake --build build-sdl --config Release --parallel
 
+      - name: Configure original gameplay C sources
+        run: >-
+          cmake -S . -B build-game
+          -DWOLF3D_BUILD_SDL3_PLATFORM=OFF
+          -DWOLF3D_BUILD_LEGACY_GAME_OBJECTS=ON
+          -DCMAKE_BUILD_TYPE=Release
+
+      - name: Compile original gameplay as C
+        run: cmake --build build-game --target wolf3d_game_objects --config Release --parallel
+
       - name: Configure sanitised build
         if: runner.os == 'Linux'
         run: >-
