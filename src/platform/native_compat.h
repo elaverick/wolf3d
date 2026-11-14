@@ -110,9 +110,13 @@ int findnext(struct ffblk *entry);
 
 int _dos_write(int handle, const void *buffer, unsigned count, unsigned *written);
 
-char *itoa(int value, char *buffer, int radix);
-char *ltoa(long value, char *buffer, int radix);
-char *ultoa(unsigned long value, char *buffer, int radix);
+char *wolf_native_itoa(int value, char *buffer, int radix);
+char *wolf_native_ltoa(long value, char *buffer, int radix);
+char *wolf_native_ultoa(unsigned long value, char *buffer, int radix);
+
+#define itoa wolf_native_itoa
+#define ltoa wolf_native_ltoa
+#define ultoa wolf_native_ultoa
 
 /* DOS mouse interrupt register compatibility used by ID_IN.H and game code. */
 extern int _AX;
