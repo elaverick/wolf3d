@@ -258,6 +258,7 @@ if(WOLF3D_BUILD_SDL3_PLATFORM)
                 )
                 set_tests_properties(platform_smoke PROPERTIES
                     ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_RENDER_DRIVER=software"
+                    TIMEOUT 15
                 )
             endif()
         endif()
