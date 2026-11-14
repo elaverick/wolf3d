@@ -22,6 +22,20 @@ static bool vga_memory_is_valid(const WolfVgaMemory *memory)
         memory->plane_size / (size_t)memory->stride_bytes;
 }
 
+bool wolf_vga_memory_init_legacy(
+    WolfVgaMemory *memory,
+    uint8_t *storage,
+    size_t storage_size)
+{
+    return wolf_vga_memory_init(
+        memory,
+        storage,
+        storage_size,
+        WOLF_VGA_LEGACY_PLANE_SIZE,
+        WOLF_VGA_LEGACY_STRIDE_BYTES,
+        WOLF_VGA_LEGACY_SCANLINES);
+}
+
 bool wolf_vga_memory_init(
     WolfVgaMemory *memory,
     uint8_t *storage,
