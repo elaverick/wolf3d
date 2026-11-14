@@ -1,0 +1,34 @@
+name: Native C build
+
+on:
+  push:
+    branches:
+      - windows-native-sdl3
+  pull_request:
+    branches:
+      - master
+      - windows-native-sdl3
+
+jobs:
+  framebuffer-tests:
+    name: Framebuffer tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DWOLF3D_BUILD_SDL3_PLATFORM=OFF -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build --config Debug --parallel
+
+      - name: Run tests
+        run: ctest --test-dir build -C Debug --output-on-failure
