@@ -1,4 +1,5 @@
 #include "native_compat.h"
+#include "platform.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -12,11 +13,8 @@ int _DX;
 
 void wolf_native_mouse_interrupt(int function)
 {
-    _AX = 0;
-    _BX = 0;
-    _CX = 0;
-    _DX = 0;
-    (void)function;
+    wolf_platform_mouse_command(
+        function, &_AX, &_BX, &_CX, &_DX);
 }
 
 static void copy_filename(char *destination, size_t capacity, const char *path)
