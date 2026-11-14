@@ -80,6 +80,39 @@ static void test_planar_pages_and_primitives(void)
         &memory, PAGE_OFFSET, 0, 0, 4, 2, planar, sizeof(planar) - 1));
 }
 
+static void test_original_vga_layout(void)
+{
+    static uint8_t legacy_storage[
+        WOLF_VGA_LEGACY_PLANE_SIZE * WOLF_VGA_PLANE_COUNT];
+    static uint8_t legacy_output[320 * 200];
+    WolfVgaMemory memory;
+    WolfFramebuffer output;
+
+    assert(WOLF_VGA_LEGACY_PAGE_SIZE == 16640);
+    assert(WOLF_VGA_LEGACY_PAGE2_OFFSET == 16640);
+    assert(WOLF_VGA_LEGACY_PAGE3_OFFSET == 33280);
+    assert(WOLF_VGA_LEGACY_LATCH_OFFSET == 49920);
+
+    memset(legacy_storage, 0, sizeof(legacy_storage));
+    assert(wolf_vga_memory_init_legacy(
+        &memory, legacy_storage, sizeof(legacy_storage)));
+    assert(wolf_framebuffer_init(
+        &output, 320, 200, 320, legacy_output, sizeof(legacy_output)));
+
+    wolf_vga_memory_plot(
+        &memory, WOLF_VGA_LEGACY_PAGE2_OFFSET, 319, 199, 0x7a);
+    assert(wolf_vga_memory_present(
+        &memory, WOLF_VGA_LEGACY_PAGE2_OFFSET, &output));
+    assert(legacy_output[199 * 320 + 319] == 0x7a);
+
+    assert(wolf_vga_memory_mem_to_latch(
+        &memory, WOLF_VGA_LEGACY_LATCH_OFFSET, 4, 2,
+        (const uint8_t[]){0, 4, 1, 5, 2, 6, 3, 7}, 8));
+    assert(legacy_storage[WOLF_VGA_LEGACY_LATCH_OFFSET] == 0);
+    assert(legacy_storage[WOLF_VGA_LEGACY_PLANE_SIZE +
+        WOLF_VGA_LEGACY_LATCH_OFFSET] == 1);
+}
+
 static void test_wall_post_scaling(void)
 {
     WolfVgaMemory memory;
@@ -159,6 +192,7 @@ int main(void)
     test_planar_pages_and_primitives();
     test_latch_memory();
     test_wall_post_scaling();
+    test_original_vga_layout();
 
     puts("software VGA memory tests passed");
     return 0;
