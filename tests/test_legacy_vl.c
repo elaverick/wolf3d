@@ -31,6 +31,7 @@ static void test_basic_video_api(void)
     assert(ylookup[199] == 15920);
 
     VL_SetScreen((int)WOLF_VGA_LEGACY_PAGE2_OFFSET, 0);
+    bufferofs = WOLF_VGA_LEGACY_PAGE2_OFFSET;
     VL_Plot(319, 199, 7);
     assert(VL_Present());
 
@@ -60,6 +61,7 @@ static void test_image_and_text_api(void)
     int y;
 
     VL_SetScreen((int)WOLF_VGA_LEGACY_PAGE3_OFFSET, 0);
+    bufferofs = WOLF_VGA_LEGACY_PAGE3_OFFSET;
     VL_SetLineWidth(40);
     VL_ClearVideo(0);
 
