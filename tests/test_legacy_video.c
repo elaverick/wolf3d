@@ -13,6 +13,65 @@ static uint8_t vga_storage[
     WOLF_VGA_LEGACY_PLANE_SIZE * WOLF_VGA_PLANE_COUNT];
 static uint8_t framebuffer_storage[320 * 200];
 
+static unsigned delay_call_count;
+static uint32_t last_delay_ms;
+
+static void record_delay(uint32_t milliseconds, void *userdata)
+{
+    unsigned *counter = (unsigned *)userdata;
+
+    ++(*counter);
+    delay_call_count = *counter;
+    last_delay_ms = milliseconds;
+}
+
+static void test_palette_fades_and_timing(void)
+{
+    WolfLegacyVideo video;
+    uint8_t target_palette[256][3] = {{0}};
+    unsigned callback_count = 0;
+
+    memset(vga_storage, 0, sizeof(vga_storage));
+    assert(wolf_legacy_video_init(
+        &video,
+        vga_storage,
+        sizeof(vga_storage),
+        framebuffer_storage,
+        sizeof(framebuffer_storage),
+        320));
+
+    wolf_legacy_video_set_delay_callback(&video, record_delay, &callback_count);
+    wolf_legacy_video_set_color(&video, 5, 60, 30, 0);
+    wolf_legacy_video_fade_out(&video, 5, 5, 0, 0, 0, 2);
+
+    assert(video.screen_faded);
+    assert(video.palette_dac[5][0] == 0);
+    assert(video.palette_dac[5][1] == 0);
+    assert(video.palette_dac[5][2] == 0);
+    assert(video.palette_dac[0][0] == 0);
+    assert(callback_count == 3);
+    assert(delay_call_count == 3);
+    assert(last_delay_ms == 15);
+
+    target_palette[5][0] = 63;
+    target_palette[5][1] = 32;
+    target_palette[5][2] = 16;
+    target_palette[6][0] = 20;
+    target_palette[6][1] = 10;
+
+    wolf_legacy_video_fade_in(
+        &video, 5, 5, (const uint8_t (*)[3])target_palette, 2);
+
+    assert(!video.screen_faded);
+    assert(video.palette_dac[5][0] == 63);
+    assert(video.palette_dac[5][1] == 32);
+    assert(video.palette_dac[5][2] == 16);
+    assert(video.palette_dac[6][0] == 20);
+    assert(video.palette_dac[6][1] == 10);
+    assert(callback_count == 6);
+    assert(last_delay_ms == 15);
+}
+
 static void test_video_page_and_palette(void)
 {
     WolfLegacyVideo video;
@@ -113,6 +172,7 @@ static void test_image_and_latch_path(void)
 int main(void)
 {
     test_video_page_and_palette();
+    test_palette_fades_and_timing();
     test_image_and_latch_path();
 
     puts("legacy video adapter tests passed");
