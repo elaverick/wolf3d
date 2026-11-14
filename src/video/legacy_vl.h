@@ -14,6 +14,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define SCREENWIDTH WOLF_VGA_LEGACY_STRIDE_BYTES
+
 extern unsigned bufferofs;
 extern unsigned displayofs;
 extern unsigned pelpan;
