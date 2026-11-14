@@ -213,8 +213,8 @@ void IN_ReadControl(int player, ControlInfo *info)
             DemoMode = demo_PlayDone;
         } else {
             demo_byte = DemoBuffer[DemoOffset + 1];
-            my = (Motion)((demo_byte & 3u) - 1);
-            mx = (Motion)(((demo_byte >> 2) & 3u) - 1);
+            my = (Motion)((int)(demo_byte & 3u) - 1);
+            mx = (Motion)((int)((demo_byte >> 2) & 3u) - 1);
             buttons = (word)((demo_byte >> 4) & 3u);
 
             if (--DemoBuffer[DemoOffset] == 0) {
@@ -496,7 +496,7 @@ byte *IN_GetScanName(ScanCode scan_code)
 {
     static byte name[8];
 
-    (void)snprintf((char *)name, sizeof(name), "0x%02X", scan_code);
+    (void)snprintf((char *)name, sizeof(name), "0x%02X", (unsigned)scan_code);
     return name;
 }
 
