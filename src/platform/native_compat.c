@@ -1,3 +1,8 @@
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include "native_compat.h"
 #include "platform.h"
 
@@ -49,13 +54,24 @@ int findfirst(const char *pattern, struct ffblk *entry, int attributes)
     (void)attributes;
 
 #ifdef _WIN32
-    entry->handle = FindFirstFileA(pattern, &entry->find_data);
-    if (entry->handle == INVALID_HANDLE_VALUE) {
+    WIN32_FIND_DATAA *find_data =
+        (WIN32_FIND_DATAA *)malloc(sizeof(*find_data));
+    HANDLE handle;
+
+    if (find_data == NULL) {
         return -1;
     }
 
+    handle = FindFirstFileA(pattern, find_data);
+    if (handle == INVALID_HANDLE_VALUE) {
+        free(find_data);
+        return -1;
+    }
+
+    entry->handle = (void *)handle;
+    entry->find_data = find_data;
     copy_filename(
-        entry->ff_name, sizeof(entry->ff_name), entry->find_data.cFileName);
+        entry->ff_name, sizeof(entry->ff_name), find_data->cFileName);
     return 0;
 #else
     if (glob(pattern, 0, NULL, &entry->matches) != 0 ||
@@ -80,17 +96,22 @@ int findnext(struct ffblk *entry)
     }
 
 #ifdef _WIN32
-    if (entry->handle == INVALID_HANDLE_VALUE ||
-        !FindNextFileA(entry->handle, &entry->find_data)) {
-        if (entry->handle != INVALID_HANDLE_VALUE) {
-            FindClose(entry->handle);
-            entry->handle = INVALID_HANDLE_VALUE;
+    WIN32_FIND_DATAA *find_data = (WIN32_FIND_DATAA *)entry->find_data;
+    HANDLE handle = (HANDLE)entry->handle;
+
+    if (find_data == NULL || handle == INVALID_HANDLE_VALUE ||
+        !FindNextFileA(handle, find_data)) {
+        if (handle != INVALID_HANDLE_VALUE && handle != NULL) {
+            FindClose(handle);
         }
+        free(find_data);
+        entry->handle = NULL;
+        entry->find_data = NULL;
         return 1;
     }
 
     copy_filename(
-        entry->ff_name, sizeof(entry->ff_name), entry->find_data.cFileName);
+        entry->ff_name, sizeof(entry->ff_name), find_data->cFileName);
     return 0;
 #else
     if (entry->index + 1 >= entry->matches.gl_pathc) {
