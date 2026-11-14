@@ -80,6 +80,70 @@ static void test_planar_pages_and_primitives(void)
         &memory, PAGE_OFFSET, 0, 0, 4, 2, planar, sizeof(planar) - 1));
 }
 
+static void test_screen_to_screen_overlap(void)
+{
+    WolfVgaMemory memory;
+    int plane;
+    int row;
+
+    memset(storage, 0, sizeof(storage));
+    assert(wolf_vga_memory_init(
+        &memory, storage, sizeof(storage), PLANE_SIZE, STRIDE, HEIGHT));
+
+    for (plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        for (row = 0; row < HEIGHT; ++row) {
+            memset(
+                memory.planes[plane] + (size_t)row * STRIDE,
+                (int)(plane * 16 + row),
+                STRIDE);
+        }
+    }
+
+    /* Downward overlapping copy must proceed from the bottom row upward. */
+    assert(wolf_vga_memory_screen_to_screen(&memory, 0, STRIDE, 4, 3));
+    for (plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        assert(memory.planes[plane][STRIDE] == (uint8_t)(plane * 16));
+        assert(memory.planes[plane][STRIDE * 2] == (uint8_t)(plane * 16 + 1));
+        assert(memory.planes[plane][STRIDE * 3] == (uint8_t)(plane * 16 + 2));
+    }
+
+    /* Upward overlapping copy must proceed from the top row downward. */
+    for (plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        for (row = 0; row < HEIGHT; ++row) {
+            memset(
+                memory.planes[plane] + (size_t)row * STRIDE,
+                (int)(plane * 16 + row),
+                STRIDE);
+        }
+    }
+
+    assert(wolf_vga_memory_screen_to_screen(
+        &memory, STRIDE, 0, 4, 3));
+    for (plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        assert(memory.planes[plane][0] == (uint8_t)(plane * 16 + 1));
+        assert(memory.planes[plane][STRIDE] == (uint8_t)(plane * 16 + 2));
+        assert(memory.planes[plane][STRIDE * 2] == (uint8_t)(plane * 16 + 3));
+    }
+
+    /* Horizontal overlap within one row is handled by memmove. */
+    for (plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        for (row = 0; row < STRIDE; ++row) {
+            memory.planes[plane][row] = (uint8_t)row;
+        }
+    }
+
+    assert(wolf_vga_memory_screen_to_screen(&memory, 0, 1, 3, 1));
+    for (plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        assert(memory.planes[plane][1] == 0);
+        assert(memory.planes[plane][2] == 1);
+        assert(memory.planes[plane][3] == 2);
+    }
+
+    assert(!wolf_vga_memory_screen_to_screen(
+        &memory, PLANE_SIZE, 0, 1, 1));
+    assert(!wolf_vga_memory_screen_to_screen(&memory, 0, 0, 5, 1));
+}
+
 static void test_scaler_matches_original_fixed_point(void)
 {
     static uint8_t scale_storage[
@@ -249,6 +313,7 @@ int main(void)
     test_wall_post_scaling();
     test_original_vga_layout();
     test_scaler_matches_original_fixed_point();
+    test_screen_to_screen_overlap();
 
     puts("software VGA memory tests passed");
     return 0;
