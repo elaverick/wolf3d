@@ -165,7 +165,7 @@ void IN_Default(boolean gotit, ControlType in)
     IN_SetControlType(0, in);
 }
 
-void IN_SetKeyHook(void (*hook)())
+void IN_SetKeyHook(void (*hook)(void))
 {
     key_hook = hook;
 }
