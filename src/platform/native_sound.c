@@ -63,8 +63,6 @@ static int16_t *build_pc_samples(const PCSound *sound, size_t *sample_count)
     sample_index = 0;
     for (tick = 0; tick < sound->common.length; ++tick) {
         unsigned command = sound->data[tick];
-        uint64_t first_sample =
-            ((uint64_t)tick * NATIVE_PC_SAMPLE_RATE) / NATIVE_PC_TICK_RATE;
         uint64_t end_sample =
             ((uint64_t)(tick + 1u) * NATIVE_PC_SAMPLE_RATE) /
                 NATIVE_PC_TICK_RATE;
@@ -96,7 +94,6 @@ static int16_t *build_pc_samples(const PCSound *sound, size_t *sample_count)
                     : -NATIVE_PC_AMPLITUDE;
             }
         }
-        (void)first_sample;
     }
 
     *sample_count = (size_t)total_samples;

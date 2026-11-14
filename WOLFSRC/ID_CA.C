@@ -1214,7 +1214,7 @@ void CAL_SetupAudioFile (void)
     strcat(fname, extension);
     header_handle = open(fname, O_RDONLY | O_BINARY, S_IREAD);
     if (header_handle < 0) {
-        fprintf(stderr, "Audio data not found (%s); continuing without sound effects.\\n", fname);
+        fprintf(stderr, "Audio data not found (%s); continuing without sound effects.\n", fname);
         return;
     }
 
@@ -1223,7 +1223,7 @@ void CAL_SetupAudioFile (void)
     if (header_length < required_length ||
         (header_length % (long)sizeof(int32_t)) != 0) {
         close(header_handle);
-        fprintf(stderr, "Invalid audio header (%s); continuing silently.\\n", fname);
+        fprintf(stderr, "Invalid audio header (%s); continuing silently.\n", fname);
         return;
     }
 
@@ -1237,7 +1237,7 @@ void CAL_SetupAudioFile (void)
         }
         audiostarts = NULL;
         close(header_handle);
-        fprintf(stderr, "Unable to read audio header (%s); continuing silently.\\n", fname);
+        fprintf(stderr, "Unable to read audio header (%s); continuing silently.\n", fname);
         return;
     }
     close(header_handle);
@@ -1248,7 +1248,7 @@ void CAL_SetupAudioFile (void)
     if (audiohandle < 0) {
         MM_FreePtr((memptr *)&audiostarts);
         audiostarts = NULL;
-        fprintf(stderr, "Audio data file not found (%s); continuing silently.\\n", fname);
+        fprintf(stderr, "Audio data file not found (%s); continuing silently.\n", fname);
         return;
     }
 #else
@@ -1368,8 +1368,10 @@ void CA_CacheAudioChunk (int chunk)
 	byte	far *source;
 #endif
 
-    if (audiohandle < 0 || audiostarts == NULL)
+    if (audiohandle < 0 || audiostarts == NULL ||
+        chunk < 0 || chunk >= NUMSNDCHUNKS) {
         return;
+    }
 	if (audiosegs[chunk])
 	{
 		MM_SetPurge ((memptr *)&audiosegs[chunk],0);
@@ -1380,10 +1382,6 @@ void CA_CacheAudioChunk (int chunk)
 // load the chunk into a buffer, either the miscbuffer if it fits, or allocate
 // a larger buffer
 //
-    if (chunk < 0 || chunk >= NUMSNDCHUNKS) {
-        return;
-    }
-
 	pos = audiostarts[chunk];
 	compressed = audiostarts[chunk+1]-pos;
     if (pos < 0 || compressed <= 0) {

@@ -12,6 +12,11 @@
 
 byte *audiosegs[NUMSNDCHUNKS];
 
+typedef struct TestPCSound {
+    SoundCommon common;
+    byte data[4];
+} TestPCSound;
+
 static int16_t captured_samples[4096];
 static size_t captured_sample_count;
 static int submit_calls;
@@ -51,11 +56,6 @@ void wolf_platform_delay_ms(uint32_t milliseconds)
 
 static void test_pc_speaker_stream_timing_and_silence(void)
 {
-    struct TestPCSound {
-        SoundCommon common;
-        byte data[4];
-    } sound;
-
     memset(&sound, 0, sizeof(sound));
     sound.common.length = 4;
     sound.common.priority = 10;
@@ -87,8 +87,8 @@ static void test_pc_speaker_stream_timing_and_silence(void)
 
 static void test_priority_and_replacement(void)
 {
-    struct TestPCSound low_priority;
-    struct TestPCSound high_priority;
+    TestPCSound low_priority;
+    TestPCSound high_priority;
 
     memset(&low_priority, 0, sizeof(low_priority));
     low_priority.common.length = 2;
