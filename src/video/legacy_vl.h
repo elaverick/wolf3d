@@ -18,6 +18,7 @@ extern unsigned bufferofs;
 extern unsigned displayofs;
 extern unsigned pelpan;
 extern unsigned linewidth;
+extern unsigned screenseg;
 extern unsigned ylookup[200];
 extern bool screenfaded;
 extern unsigned bordercolor;
