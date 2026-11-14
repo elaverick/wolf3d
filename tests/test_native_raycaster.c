@@ -67,17 +67,17 @@ static void reset_ray_state(void)
     horizontal_hits = 0;
 }
 
-static void test_cardinal_quadrants_hit_expected_vertical_wall(void)
+static void test_four_quadrants_hit_expected_vertical_wall(void)
 {
     static const struct {
         int angle;
         int wall_x;
         int wall_y;
     } cases[] = {
-        {0, 11, 10},
-        {900, 9, 10},
-        {1800, 9, 10},
-        {2700, 11, 10}
+        {450, 11, 10},
+        {1350, 9, 10},
+        {2250, 9, 10},
+        {3150, 11, 10}
     };
     size_t i;
 
@@ -115,7 +115,7 @@ int main(void)
         finetangent[i] = 65536;
     }
 
-    test_cardinal_quadrants_hit_expected_vertical_wall();
+    test_four_quadrants_hit_expected_vertical_wall();
     test_ray_stops_at_map_boundary();
 
     puts("native raycaster tests passed");
