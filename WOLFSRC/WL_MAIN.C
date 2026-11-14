@@ -4,6 +4,9 @@
 #include <conio.h>
 #endif
 #include "WL_DEF.H"
+#ifdef WOLF3D_NATIVE
+#include <limits.h>
+#endif
 #pragma hdrstop
 
 

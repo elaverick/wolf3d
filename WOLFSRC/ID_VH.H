@@ -1,6 +1,8 @@
 // ID_VH.H
 
 
+#define TILEWIDTH 4
+
 #define WHITE			15			// graphics mode independant colors
 #define BLACK			0
 #define FIRSTCOLOR		1
