@@ -76,6 +76,8 @@ static boolean read_page_header(void)
     byte *lengths = NULL;
     size_t offsets_size;
     size_t lengths_size;
+    uint64_t table_end;
+    long page_file_size;
     unsigned index;
 
     if (!read_exact(page_file, header, sizeof(header))) {
@@ -94,6 +96,12 @@ static boolean read_page_header(void)
 
     offsets_size = (size_t)ChunksInFile * 4u;
     lengths_size = (size_t)ChunksInFile * 2u;
+    table_end = 6u + (uint64_t)offsets_size + (uint64_t)lengths_size;
+    page_file_size = filelength(page_file);
+    if (page_file_size < 0 || table_end > (uint64_t)page_file_size) {
+        return false;
+    }
+
     offsets = (byte *)malloc(offsets_size);
     lengths = (byte *)malloc(lengths_size);
     if (offsets == NULL || lengths == NULL) {
@@ -127,8 +135,26 @@ static boolean read_page_header(void)
     }
 
     for (index = 0; index < ChunksInFile; ++index) {
-        PMPages[index].offset = read_u32_le(offsets + (size_t)index * 4u);
-        PMPages[index].length = read_u16_le(lengths + (size_t)index * 2u);
+        uint32_t page_offset =
+            read_u32_le(offsets + (size_t)index * 4u);
+        uint16_t page_length =
+            read_u16_le(lengths + (size_t)index * 2u);
+
+        if (page_length > PMPageSize ||
+            (page_length != 0 &&
+             ((uint64_t)page_offset < table_end ||
+              (uint64_t)page_offset + (uint64_t)page_length >
+                  (uint64_t)page_file_size))) {
+            MM_FreePtr((memptr *)&PMPages);
+            free(page_addresses);
+            page_addresses = NULL;
+            free(offsets);
+            free(lengths);
+            return false;
+        }
+
+        PMPages[index].offset = page_offset;
+        PMPages[index].length = page_length;
         PMPages[index].xmsPage = -1;
         PMPages[index].emsPage = -1;
         PMPages[index].mainPage = -1;
