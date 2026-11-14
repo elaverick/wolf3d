@@ -74,38 +74,38 @@ CP_itemtype far
 MainMenu[]=
 {
 #ifdef JAPAN
-	{1,"",CP_ROUTINE(CP_NewGame)},
-	{1,"",CP_ROUTINE(CP_Sound)},
-	{1,"",CP_ROUTINE(CP_Control)},
-	{1,"",CP_ROUTINE(CP_LoadGame)},
-	{0,"",CP_ROUTINE(CP_SaveGame)},
-	{1,"",CP_ROUTINE(CP_ChangeView)},
-	{2,"",CP_ROUTINE(CP_ReadThis)},
-	{1,"",CP_ROUTINE(CP_ViewScores)},
+	{1,"",CP_NewGameItem},
+	{1,"",CP_SoundItem},
+	{1,"",CP_ControlItem},
+	{1,"",CP_LoadGameItem},
+	{0,"",CP_SaveGameItem},
+	{1,"",CP_ChangeViewItem},
+	{2,"",CP_ReadThisItem},
+	{1,"",CP_ViewScoresItem},
 	{1,"",0},
 	{1,"",0}
 #else
 
-	{1,STR_NG,CP_ROUTINE(CP_NewGame)},
-	{1,STR_SD,CP_ROUTINE(CP_Sound)},
-	{1,STR_CL,CP_ROUTINE(CP_Control)},
-	{1,STR_LG,CP_ROUTINE(CP_LoadGame)},
-	{0,STR_SG,CP_ROUTINE(CP_SaveGame)},
-	{1,STR_CV,CP_ROUTINE(CP_ChangeView)},
+	{1,STR_NG,CP_NewGameItem},
+	{1,STR_SD,CP_SoundItem},
+	{1,STR_CL,CP_ControlItem},
+	{1,STR_LG,CP_LoadGameItem},
+	{0,STR_SG,CP_SaveGameItem},
+	{1,STR_CV,CP_ChangeViewItem},
 
 #ifndef GOODTIMES
 #ifndef SPEAR
 
 	#ifdef SPANISH
-	{2,"Ve esto!",CP_ROUTINE(CP_ReadThis)},
+	{2,"Ve esto!",CP_ReadThisItem},
 	#else
-	{2,"Read This!",CP_ROUTINE(CP_ReadThis)},
+	{2,"Read This!",CP_ReadThisItem},
 	#endif
 
 #endif
 #endif
 
-	{1,STR_VS,CP_ROUTINE(CP_ViewScores)},
+	{1,STR_VS,CP_ViewScoresItem},
 	{1,STR_BD,0},
 	{1,STR_QT,0}
 #endif
@@ -149,15 +149,15 @@ far CtlMenu[]=
 	{0,"",0},
 	{0,"",0},
 	{0,"",0},
-	{0,"",CP_ROUTINE(MouseSensitivity)},
-	{1,"",CP_ROUTINE(CustomControls)}
+	{0,"",MouseSensitivityItem},
+	{1,"",CustomControlsItem}
 #else
 	{0,STR_MOUSEEN,0},
 	{0,STR_JOYEN,0},
 	{0,STR_PORT2,0},
 	{0,STR_GAMEPAD,0},
-	{0,STR_SENS,CP_ROUTINE(MouseSensitivity)},
-	{1,STR_CUSTOM,CP_ROUTINE(CustomControls)}
+	{0,STR_SENS,MouseSensitivityItem},
+	{1,STR_CUSTOM,CustomControlsItem}
 #endif
 },
 
@@ -886,7 +886,7 @@ int CP_EndGame(void)
 
 	#pragma warn -sus
 	MainMenu[savegame].active = 0;
-	MainMenu[viewscores].routine=CP_ROUTINE(CP_ViewScores);
+	MainMenu[viewscores].routine=CP_ViewScoresItem;
 	#ifndef JAPAN
 	_fstrcpy(MainMenu[viewscores].string,STR_VS);
 	#endif
