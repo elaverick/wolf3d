@@ -1,64 +1,68 @@
 # Native Windows port
 
-## Direction
+The native port is developed on the `windows-native-sdl3` branch. The initial
+work keeps the original game sources intact while establishing a clean,
+portable platform boundary.
 
-The native port uses C11 and SDL3. The original game code remains the authority
-for gameplay, simulation, resource formats and rendering behaviour.
+## Architecture
 
-SDL3 is a platform backend, not a replacement game engine. Operating-system
-services are exposed to game code through small interfaces under
-`src/platform`.
+- Game and renderer code remain C. The project uses C11; no C++ is required.
+- SDL3 is an implementation detail of the platform layer.
+- The game-facing platform API lives in `src/platform/platform.h`.
+- SDL3 implementation details live in `src/platform/sdl3/`.
+- The presentation contract is an 8-bit indexed framebuffer and a 256-entry
+  RGB palette. The platform converts this to an SDL texture.
+- Original game logic, resource formats and rendering algorithms should be
+  retained wherever practical. DOS hardware access and compiler-specific
+  assembly are replaced behind platform or renderer interfaces.
 
-## Design rules
+## Current implementation
 
-- Keep the implementation in C. Do not introduce C++.
-- Prefer small modules with explicit responsibilities and narrow headers.
-- Keep SDL and Win32 types out of game and engine headers.
-- Preserve original game behaviour before considering enhancements.
-- Replace DOS hardware access at subsystem boundaries rather than emulating
-  VGA, Sound Blaster or DOS interrupts.
-- Use ordinary flat address-space pointers and standard allocation on the
-  native target; do not reproduce segmented-memory abstractions.
-- Keep timing deterministic: simulation ticks must be independent of render
-  presentation frequency.
-- Retain original resource formats and data compatibility wherever practical.
+The SDL3 adapter currently provides:
 
-## Planned subsystem boundaries
+- Window creation and event pumping.
+- Monotonic millisecond timing.
+- Presentation of a caller-owned 8-bit indexed framebuffer and RGB palette.
+- Nearest-neighbour scaling with letterboxing, preserving the framebuffer
+  aspect ratio.
+- A standalone smoke-test executable that exercises this path without
+  depending on the legacy engine.
 
-| Concern | Native implementation |
-| --- | --- |
-| Window and event lifecycle | SDL3 platform backend |
-| Input | SDL3 input backend behind the input manager interface |
-| Audio output | SDL3 audio backend behind the sound manager interface |
-| Time | Monotonic SDL performance counter |
-| Framebuffer presentation | SDL3 surface/texture presentation |
-| Memory and page cache | Portable C implementation |
-| Game simulation and resource formats | Existing engine code, incrementally ported |
+The framebuffer defaults to 320x200, but dimensions are configurable. The
+platform copies each submitted frame, so the caller may reuse its framebuffer
+as soon as presentation returns.
 
-## Initial build
+**Important:** this is a presentation layer, not yet the original game's video
+backend. The original VGA code uses planar video memory and direct hardware
+register access. That path must be replaced with a portable linear framebuffer
+implementation before the game renderer can submit frames here.
 
-The top-level CMake project detects an installed SDL3 CMake package. When SDL3
-is available it builds the platform adapter as a static C library. The adapter
-is intentionally not wired into the original DOS entry point yet; that
-integration follows after the original compiler and memory assumptions have
-been mapped.
+## Build
 
-On Windows, configure with a C compiler and an SDL3 development package:
+Install SDL3 development files and make its CMake package discoverable, then:
 
-```powershell
-cmake -S . -B build -A x64
+```sh
+cmake -S . -B build -DSDL3_DIR=/path/to/SDL3/cmake
 cmake --build build --config Release
 ```
 
-If SDL3 is installed outside the default CMake search paths, set
-`SDL3_DIR` to the directory containing its package configuration.
+Run `wolf3d_platform_smoke` to verify the window and indexed-framebuffer
+presentation path.
+
+If SDL3 is not found, CMake reports that the platform targets are skipped.
+This is deliberate while the legacy engine is being separated from its DOS
+dependencies.
 
 ## Next steps
 
-1. Inventory compiler-specific syntax, segmented pointers and inline assembly.
-2. Establish a portable type and memory layer.
-3. Port the video manager to an indexed software framebuffer and SDL3
-   presentation.
-4. Port input, timing and audio managers independently.
-5. Connect the native entry point to the existing game lifecycle.
-6. Add regression checks for resource loading and deterministic game logic.
+1. Replace the VGA register and segmented-memory operations with a portable
+   software framebuffer, preserving the existing drawing API where possible.
+2. Audit the original assembly drawing routines and translate their behaviour
+   into readable C.
+3. Connect the original renderer to the platform presentation API.
+4. Port input, timing, audio, filesystem and memory management independently.
+5. Bring up the original game loop only after the renderer and resource loading
+   paths build cleanly on a modern compiler.
+
+Do not copy SDL types into game headers. Do not introduce a second renderer
+while the original software renderer can be preserved.
