@@ -7,6 +7,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
 option(WOLF3D_BUILD_SDL3_PLATFORM "Build the native SDL3 platform layer" ON)
+option(WOLF3D_BUILD_PLATFORM_SMOKE_TEST "Build the SDL3 framebuffer smoke test" ON)
 
 if(WOLF3D_BUILD_SDL3_PLATFORM)
     find_package(SDL3 CONFIG QUIET)
@@ -26,12 +27,18 @@ if(WOLF3D_BUILD_SDL3_PLATFORM)
                 SDL3::SDL3
         )
 
-        target_compile_definitions(wolf3d_platform
-            PRIVATE
-                SDL_MAIN_HANDLED
-        )
+        if(WOLF3D_BUILD_PLATFORM_SMOKE_TEST)
+            add_executable(wolf3d_platform_smoke
+                examples/platform_smoke.c
+            )
+
+            target_link_libraries(wolf3d_platform_smoke
+                PRIVATE
+                    wolf3d_platform
+            )
+        endif()
     else()
-        message(STATUS "SDL3 was not found; the native platform target is skipped.")
-        message(STATUS "Install SDL3 development files or provide SDL3_DIR to enable it.")
+        message(STATUS "SDL3 was not found; the native platform targets are skipped.")
+        message(STATUS "Install SDL3 development files or provide SDL3_DIR to enable them.")
     endif()
 endif()
