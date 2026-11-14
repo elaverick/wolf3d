@@ -15,6 +15,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef void (*WolfLegacyVideoDelayFn)(uint32_t milliseconds, void *userdata);
+
 typedef struct WolfLegacyVideo {
     WolfVgaMemory memory;
     WolfFramebuffer framebuffer;
@@ -22,6 +24,10 @@ typedef struct WolfLegacyVideo {
     size_t display_page_offset;
     uint8_t palette_dac[256][3];
     uint8_t palette_rgb[256][3];
+    WolfLegacyVideoDelayFn delay_callback;
+    void *delay_userdata;
+    bool screen_faded;
+    unsigned border_colour;
 } WolfLegacyVideo;
 
 bool wolf_legacy_video_init(
@@ -83,6 +89,26 @@ bool wolf_legacy_video_scale_post(
     size_t source_size,
     int source_height,
     int destination_height);
+
+void wolf_legacy_video_set_delay_callback(
+    WolfLegacyVideo *video,
+    WolfLegacyVideoDelayFn callback,
+    void *userdata);
+void wolf_legacy_video_wait_vbl(WolfLegacyVideo *video, int vbls);
+void wolf_legacy_video_fade_out(
+    WolfLegacyVideo *video,
+    int first_colour,
+    int last_colour,
+    int red,
+    int green,
+    int blue,
+    int steps);
+void wolf_legacy_video_fade_in(
+    WolfLegacyVideo *video,
+    int first_colour,
+    int last_colour,
+    const uint8_t target_palette[256][3],
+    int steps);
 
 void wolf_legacy_video_fill_palette(
     WolfLegacyVideo *video, int red, int green, int blue);
