@@ -70,6 +70,7 @@ int findfirst(const char *pattern, struct ffblk *entry, int attributes)
 
     entry->handle = (void *)handle;
     entry->find_data = find_data;
+    entry->active = 1;
     copy_filename(
         entry->ff_name, sizeof(entry->ff_name), find_data->cFileName);
     return 0;
@@ -81,6 +82,7 @@ int findfirst(const char *pattern, struct ffblk *entry, int attributes)
     }
 
     entry->index = 0;
+    entry->active = 1;
     copy_filename(
         entry->ff_name,
         sizeof(entry->ff_name),
@@ -89,9 +91,32 @@ int findfirst(const char *pattern, struct ffblk *entry, int attributes)
 #endif
 }
 
+void wolf_native_findclose(struct ffblk *entry)
+{
+    if (entry == NULL || !entry->active) {
+        return;
+    }
+
+#ifdef _WIN32
+    {
+        HANDLE handle = (HANDLE)entry->handle;
+        if (handle != NULL && handle != INVALID_HANDLE_VALUE) {
+            FindClose(handle);
+        }
+        free(entry->find_data);
+        entry->handle = NULL;
+        entry->find_data = NULL;
+    }
+#else
+    globfree(&entry->matches);
+    entry->index = 0;
+#endif
+    entry->active = 0;
+}
+
 int findnext(struct ffblk *entry)
 {
-    if (entry == NULL) {
+    if (entry == NULL || !entry->active) {
         return 1;
     }
 
@@ -101,12 +126,7 @@ int findnext(struct ffblk *entry)
 
     if (find_data == NULL || handle == INVALID_HANDLE_VALUE ||
         !FindNextFileA(handle, find_data)) {
-        if (handle != INVALID_HANDLE_VALUE && handle != NULL) {
-            FindClose(handle);
-        }
-        free(find_data);
-        entry->handle = NULL;
-        entry->find_data = NULL;
+        wolf_native_findclose(entry);
         return 1;
     }
 
@@ -115,8 +135,7 @@ int findnext(struct ffblk *entry)
     return 0;
 #else
     if (entry->index + 1 >= entry->matches.gl_pathc) {
-        globfree(&entry->matches);
-        entry->index = 0;
+        wolf_native_findclose(entry);
         return 1;
     }
 
