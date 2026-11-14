@@ -308,6 +308,59 @@ void VL_MaskedToScreen(
     VL_MemToScreen(source, width, height, x, y);
 }
 
+void VL_DrawTile8String(
+    const char *text, const uint8_t *tile8_data, int x, int y)
+{
+    WolfLegacyVideo *video = get_video();
+
+    if (video == NULL || text == NULL || tile8_data == NULL) {
+        return;
+    }
+
+    while (*text != '\\0') {
+        unsigned character = (unsigned char)*text;
+        const uint8_t *glyph = tile8_data + (size_t)character * 64u;
+
+        (void)wolf_legacy_video_mem_to_screen(
+            video, x, y, 8, 8, glyph, 64);
+        x += 8;
+        ++text;
+    }
+}
+
+void VL_DrawLatch8String(
+    const char *text, unsigned tile8_offset, int x, int y)
+{
+    WolfLegacyVideo *video = get_video();
+
+    if (video == NULL || text == NULL) {
+        return;
+    }
+
+    while (*text != '\\0') {
+        size_t glyph_offset =
+            (size_t)tile8_offset + ((size_t)(unsigned char)*text << 4);
+
+        (void)wolf_legacy_video_latch_to_screen(
+            video, glyph_offset, x, y, 2, 8);
+        x += 8;
+        ++text;
+    }
+}
+
+void VL_SizeTile8String(const char *text, int *width, int *height)
+{
+    size_t length = text != NULL ? strlen(text) : 0;
+
+    if (width != NULL) {
+        *width = length > (size_t)INT_MAX / 8 ?
+            INT_MAX : (int)(length * 8);
+    }
+    if (height != NULL) {
+        *height = 8;
+    }
+}
+
 void VL_TestPaletteSet(void)
 {
     /* SDL textures consume the in-memory palette directly; no DAC probe needed. */
