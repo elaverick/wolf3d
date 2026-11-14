@@ -2,7 +2,17 @@
 #include "native_compat.h"
 #include "platform.h"
 #include "legacy_vl.h"
+#include <errno.h>
 #include <stdio.h>
+#include <string.h>
+
+#ifdef _WIN32
+#include <direct.h>
+#define native_change_directory _chdir
+#else
+#include <unistd.h>
+#define native_change_directory chdir
+#endif
 
 void WolfMain(void);
 
@@ -18,6 +28,49 @@ static void delay_frame(uint32_t milliseconds, void *userdata)
     wolf_platform_delay_ms(milliseconds);
 }
 
+static void print_usage(const char *program)
+{
+    fprintf(stdout,
+        "Usage: %s [--data-dir DIRECTORY]\\n"
+        "Run using original Wolfenstein 3-D game data in DIRECTORY.\\n"
+        "The directory must contain the matching WL6/WL1/SOD data files.\\n",
+        program);
+}
+
+static bool select_data_directory(int argc, char **argv)
+{
+    int index;
+
+    for (index = 1; index < argc; ++index) {
+        if (strcmp(argv[index], "--help") == 0 ||
+            strcmp(argv[index], "-h") == 0) {
+            print_usage(argv[0]);
+            return false;
+        }
+
+        if (strcmp(argv[index], "--data-dir") == 0 ||
+            strcmp(argv[index], "-d") == 0) {
+            if (index + 1 >= argc || argv[index + 1][0] == '\\0') {
+                fprintf(stderr, "%s requires a directory path.\\n", argv[index]);
+                return false;
+            }
+            if (native_change_directory(argv[index + 1]) != 0) {
+                fprintf(stderr, "Unable to use game data directory '%s': %s\\n",
+                    argv[index + 1], strerror(errno));
+                return false;
+            }
+            ++index;
+            continue;
+        }
+
+        fprintf(stderr, "Unknown option: %s\\n", argv[index]);
+        print_usage(argv[0]);
+        return false;
+    }
+
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     WolfPlatformConfig config = { "Wolfenstein 3D", 960, 600, 320, 200 };
@@ -28,6 +81,11 @@ int main(int argc, char **argv)
 
     _argc = argc;
     _argv = argv;
+    if (!select_data_directory(argc, argv)) {
+        return argc > 1 &&
+            (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)
+            ? 0 : 2;
+    }
     platform = wolf_platform_create(&config);
     if (platform == NULL) {
         fputs("Unable to initialise the SDL3 game window.\n", stderr);
