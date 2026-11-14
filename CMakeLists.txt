@@ -25,6 +25,30 @@ else()
     target_compile_options(wolf3d_native_compat PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+add_library(wolf3d_native_runtime STATIC
+    src/platform/native_memory_manager.c
+    src/platform/native_page_manager.c
+)
+
+target_include_directories(wolf3d_native_runtime
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/WOLFSRC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/platform
+)
+
+target_compile_definitions(wolf3d_native_runtime PUBLIC WOLF3D_NATIVE)
+
+target_link_libraries(wolf3d_native_runtime
+    PUBLIC
+        wolf3d_native_compat
+)
+
+if(MSVC)
+    target_compile_options(wolf3d_native_runtime PRIVATE /W4 /WX)
+else()
+    target_compile_options(wolf3d_native_runtime PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 option(WOLF3D_BUILD_LEGACY_GAME_OBJECTS "Compile portable original gameplay C sources" OFF)
 
 add_library(wolf3d_video STATIC
@@ -173,6 +197,20 @@ if(BUILD_TESTING)
 
     add_test(NAME native_input COMMAND test_native_input)
 
+    add_executable(test_native_runtime
+        tests/test_native_runtime.c
+    )
+
+    target_link_libraries(test_native_runtime PRIVATE wolf3d_native_runtime)
+
+    if(MSVC)
+        target_compile_options(test_native_runtime PRIVATE /W4 /WX)
+    else()
+        target_compile_options(test_native_runtime PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
+    add_test(NAME native_runtime COMMAND test_native_runtime)
+
     add_executable(test_native_sprite_scaler
         tests/test_native_sprite_scaler.c
     )
@@ -227,6 +265,8 @@ if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
         WOLFSRC/WL_TEXT.C
         src/platform/native_input.c
         src/platform/native_scaling.c
+        src/platform/native_memory_manager.c
+        src/platform/native_page_manager.c
         src/video/native_raycaster.c
     )
 
