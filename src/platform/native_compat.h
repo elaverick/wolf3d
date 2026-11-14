@@ -100,6 +100,7 @@
 
 #ifdef _WIN32
 #define _fstrnicmp _strnicmp
+#define _fstricmp _stricmp
 #define unlink _unlink
 #define read _read
 #define write _write

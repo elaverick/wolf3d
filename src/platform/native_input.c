@@ -492,14 +492,6 @@ word IN_GetJoyButtonsDB(word joy)
     return 0;
 }
 
-byte *IN_GetScanName(ScanCode scan_code)
-{
-    static byte name[8];
-
-    (void)snprintf((char *)name, sizeof(name), "0x%02X", (unsigned)scan_code);
-    return name;
-}
-
 byte IN_MouseButtons(void)
 {
     return MousePresent ? (byte)get_mouse_buttons() : 0;

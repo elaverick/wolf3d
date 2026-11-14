@@ -271,6 +271,10 @@ if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
         WOLFSRC/WL_STATE.C
         WOLFSRC/WL_TEXT.C
         src/platform/native_input.c
+        src/platform/native_sound.c
+        src/platform/native_debug.c
+        src/platform/native_user_random.c
+        src/platform/native_game_palette.c
         src/platform/native_scaling.c
         src/video/native_raycaster.c
     )

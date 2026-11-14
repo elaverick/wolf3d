@@ -241,6 +241,7 @@ bufferwidth = ((dest+1)-origdest)*4;
 =================
 */
 
+#ifndef WOLF3D_NATIVE
 void VL_MungePic (byte far *source, unsigned width, unsigned height)
 {
 	unsigned	x,y,plane,size,pwidth;
@@ -276,6 +277,8 @@ void VL_MungePic (byte far *source, unsigned width, unsigned height)
 
 	MM_FreePtr ((memptr *)&temp);
 }
+
+#endif
 
 void VWL_MeasureString (char far *string, word *width, word *height
 	, fontstruct _seg *font)
