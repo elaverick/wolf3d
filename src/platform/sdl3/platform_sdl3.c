@@ -327,7 +327,8 @@ bool wolf_platform_pump_events(WolfPlatform *platform)
     }
 
     while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_EVENT_QUIT) {
+        if (event.type == SDL_EVENT_QUIT ||
+            event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
             platform->quit_requested = true;
             break;
         }

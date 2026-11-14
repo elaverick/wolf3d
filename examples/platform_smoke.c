@@ -8,6 +8,8 @@
 #include "legacy_vl.h"
 #include "platform.h"
 
+#include <SDL3/SDL.h>
+
 #include <stdint.h>
 #include "native_tick.h"
 #include <stdio.h>
@@ -147,6 +149,23 @@ int main(int argc, char **argv)
         }
 
         wolf_platform_delay_ms(16);
+    }
+
+    /*
+     * Exercise a window-manager close request directly. SDL may also emit a
+     * global quit event depending on SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, but
+     * the host must handle the per-window request on its own.
+     */
+    {
+        SDL_Event close_event = { 0 };
+        close_event.type = SDL_EVENT_WINDOW_CLOSE_REQUESTED;
+        if (!SDL_PushEvent(&close_event) ||
+            wolf_platform_pump_events(platform)) {
+            fputs("SDL window-close request was not handled.\n", stderr);
+            VL_Shutdown();
+            wolf_platform_destroy(platform);
+            return 1;
+        }
     }
 
     VL_Shutdown();
