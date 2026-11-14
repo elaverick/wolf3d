@@ -200,6 +200,27 @@ if(BUILD_TESTING)
 
     add_test(NAME native_input COMMAND test_native_input)
 
+    add_executable(test_native_sound
+        tests/test_native_sound.c
+        src/platform/native_sound.c
+    )
+
+    target_include_directories(test_native_sound
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/WOLFSRC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/platform
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/video
+    )
+    target_compile_definitions(test_native_sound PRIVATE WOLF3D_NATIVE)
+
+    if(MSVC)
+        target_compile_options(test_native_sound PRIVATE /W4 /WX)
+    else()
+        target_compile_options(test_native_sound PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
+    add_test(NAME native_sound COMMAND test_native_sound)
+
     add_executable(test_native_runtime
         tests/test_native_runtime.c
     )
