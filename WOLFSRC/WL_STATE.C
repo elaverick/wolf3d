@@ -1,6 +1,8 @@
 // WL_STATE.C
 
 #include "WL_DEF.H"
+
+extern void A_DeathScream(objtype *ob);
 #pragma hdrstop
 
 /*
