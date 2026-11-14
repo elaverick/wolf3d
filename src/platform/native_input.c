@@ -37,7 +37,7 @@ word DemoOffset;
 word DemoSize;
 
 static boolean input_started;
-static void (*key_hook)();
+static void (*key_hook)(void);
 static boolean ack_button_state[8];
 
 static const Direction direction_table[9] = {
