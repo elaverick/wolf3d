@@ -1667,7 +1667,8 @@ int CalibrateJoystick(void)
 	#define CALW	158
 	#define CALH	140
 
-	unsigned xmin,ymin,xmax,ymax,jb;
+	word xmin,ymin,xmax,ymax;
+	unsigned jb;
 
 
 
