@@ -1,6 +1,8 @@
 // WL_AGENT.C
 
 #include "WL_DEF.H"
+
+extern void SpawnBJVictory(void);
 #pragma hdrstop
 
 
