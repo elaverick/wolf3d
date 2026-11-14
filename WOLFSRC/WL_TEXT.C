@@ -353,7 +353,7 @@ void HandleCtrls (void)
 
 void HandleWord (void)
 {
-	char		word[WORDLIMIT];
+	char		word_buffer[WORDLIMIT];
 	int			i,wordindex;
 	word		wwidth,wheight;
 	unsigned	newpos;
@@ -362,20 +362,20 @@ void HandleWord (void)
 	//
 	// copy the next word into [word]
 	//
-	word[0] = *text++;
+	word_buffer[0] = *text++;
 	wordindex = 1;
 	while (*text>32)
 	{
-		word[wordindex] = *text++;
+		word_buffer[wordindex] = *text++;
 		if (++wordindex == WORDLIMIT)
 			Quit ("PageLayout: Word limit exceeded");
 	}
-	word[wordindex] = 0;		// stick a null at end for C
+	word_buffer[wordindex] = 0;		// stick a null at end for C
 
 	//
 	// see if it fits on this line
 	//
-	VW_MeasurePropString (word,&wwidth,&wheight);
+	VW_MeasurePropString (word_buffer,&wwidth,&wheight);
 
 	while (px+wwidth > rightmargin[rowon])
 	{
@@ -388,7 +388,7 @@ void HandleWord (void)
 	// print it
 	//
 	newpos = px+wwidth;
-	VWB_DrawPropString (word);
+	VWB_DrawPropString (word_buffer);
 	px = newpos;
 
 	//
