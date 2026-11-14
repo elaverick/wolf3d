@@ -132,8 +132,13 @@ void VL_ClearVideo(uint8_t colour)
 
 void VL_SetLineWidth(unsigned width)
 {
+    unsigned row;
+
     if (width == WOLF_VGA_LEGACY_STRIDE_BYTES / 2u) {
         linewidth = WOLF_VGA_LEGACY_STRIDE_BYTES;
+        for (row = 0; row < 200; ++row) {
+            ylookup[row] = row * linewidth;
+        }
     }
 }
 
@@ -385,6 +390,11 @@ void VL_SizeTile8String(const char *text, int *width, int *height)
 void VL_TestPaletteSet(void)
 {
     /* SDL textures consume the in-memory palette directly; no DAC probe needed. */
+}
+
+WolfLegacyVideo *VL_GetVideo(void)
+{
+    return get_video();
 }
 
 bool VL_Present(void)
