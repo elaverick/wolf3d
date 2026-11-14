@@ -90,6 +90,8 @@ jobs:
           if ($exitCode -ne 1 -or $message -notmatch 'NO WOLFENSTEIN 3-D DATA FILES') {
             throw "Game did not reach its expected missing-data check (exit $exitCode): $message"
           }
+          # Do not leak the intentional native exit code into the Actions shell.
+          $LASTEXITCODE = 0
 
       - name: Configure original gameplay C sources
         run: >-
