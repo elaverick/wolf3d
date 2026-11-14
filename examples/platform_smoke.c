@@ -118,6 +118,11 @@ int main(int argc, char **argv)
             break;
         }
 
+        ++frame_count;
+        if (frame_limit > 0 && frame_count >= frame_limit) {
+            break;
+        }
+
         wolf_platform_delay_ms(16);
     }
 
