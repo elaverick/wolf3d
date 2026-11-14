@@ -46,6 +46,22 @@ int wolf_platform_take_ascii(void)
     return result;
 }
 
+bool wolf_platform_audio_submit(const int16_t *samples, size_t sample_count)
+{
+    (void)samples;
+    (void)sample_count;
+    return false;
+}
+
+void wolf_platform_audio_clear(void)
+{
+}
+
+int wolf_platform_audio_queued_bytes(void)
+{
+    return -1;
+}
+
 void wolf_platform_mouse_command(
     int function, int *ax, int *bx, int *cx, int *dx)
 {

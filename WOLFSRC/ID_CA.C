@@ -1201,6 +1201,57 @@ void CAL_SetupMapFile (void)
 
 void CAL_SetupAudioFile (void)
 {
+#ifdef WOLF3D_NATIVE
+    int header_handle;
+    long header_length;
+    long required_length;
+    char fname[13];
+
+    audiohandle = -1;
+    audiostarts = NULL;
+
+    strcpy(fname, aheadname);
+    strcat(fname, extension);
+    header_handle = open(fname, O_RDONLY | O_BINARY, S_IREAD);
+    if (header_handle < 0) {
+        fprintf(stderr, "Audio data not found (%s); continuing without sound effects.\\n", fname);
+        return;
+    }
+
+    header_length = filelength(header_handle);
+    required_length = (long)(NUMSNDCHUNKS + 1) * (long)sizeof(int32_t);
+    if (header_length < required_length ||
+        (header_length % (long)sizeof(int32_t)) != 0) {
+        close(header_handle);
+        fprintf(stderr, "Invalid audio header (%s); continuing silently.\\n", fname);
+        return;
+    }
+
+    MM_BombOnError(false);
+    MM_GetPtr((memptr *)&audiostarts, (unsigned long)header_length);
+    MM_BombOnError(true);
+    if (mmerror || audiostarts == NULL ||
+        !CA_FarRead(header_handle, (byte far *)audiostarts, header_length)) {
+        if (audiostarts != NULL) {
+            MM_FreePtr((memptr *)&audiostarts);
+        }
+        audiostarts = NULL;
+        close(header_handle);
+        fprintf(stderr, "Unable to read audio header (%s); continuing silently.\\n", fname);
+        return;
+    }
+    close(header_handle);
+
+    strcpy(fname, afilename);
+    strcat(fname, extension);
+    audiohandle = open(fname, O_RDONLY | O_BINARY, S_IREAD);
+    if (audiohandle < 0) {
+        MM_FreePtr((memptr *)&audiostarts);
+        audiostarts = NULL;
+        fprintf(stderr, "Audio data file not found (%s); continuing silently.\\n", fname);
+        return;
+    }
+#else
 	int handle;
 	long length;
 	char fname[13];
@@ -1241,6 +1292,7 @@ void CAL_SetupAudioFile (void)
 		 O_RDONLY | O_BINARY, S_IREAD)) == -1)
 		Quit ("Can't open AUDIO."EXTENSION"!");
 #endif
+#endif
 }
 
 //==========================================================================
@@ -1265,13 +1317,7 @@ void CA_Startup (void)
 
 	CAL_SetupMapFile ();
 	CAL_SetupGrFile ();
-#ifndef WOLF3D_NATIVE
     CAL_SetupAudioFile ();
-#else
-    /* SDL audio integration is not part of this milestone. */
-    audiohandle = -1;
-    audiostarts = NULL;
-#endif
 
 	mapon = -1;
 	ca_levelbit = 1;
@@ -1334,10 +1380,19 @@ void CA_CacheAudioChunk (int chunk)
 // load the chunk into a buffer, either the miscbuffer if it fits, or allocate
 // a larger buffer
 //
+    if (chunk < 0 || chunk >= NUMSNDCHUNKS) {
+        return;
+    }
+
 	pos = audiostarts[chunk];
 	compressed = audiostarts[chunk+1]-pos;
+    if (pos < 0 || compressed <= 0) {
+        return;
+    }
 
-	lseek(audiohandle,pos,SEEK_SET);
+	if (lseek(audiohandle,pos,SEEK_SET) != pos) {
+        return;
+    }
 
 #ifndef AUDIOHEADERLINKED
 
@@ -1345,7 +1400,9 @@ void CA_CacheAudioChunk (int chunk)
 	if (mmerror)
 		return;
 
-	CA_FarRead(audiohandle,audiosegs[chunk],compressed);
+    if (!CA_FarRead(audiohandle,audiosegs[chunk],compressed)) {
+        MM_FreePtr((memptr *)&audiosegs[chunk]);
+    }
 
 #else
 

@@ -1231,6 +1231,11 @@ void InitGame (void)
 	displayofs = 0;
 	ReadConfig ();
 
+#ifdef WOLF3D_NATIVE
+    /* Cache PC-speaker effects up front; absent audio archives remain optional. */
+    CA_LoadAllSounds();
+#endif
+
 
 //
 // HOLDING DOWN 'M' KEY?
