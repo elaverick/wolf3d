@@ -182,6 +182,25 @@ bool wolf_legacy_video_mem_to_latch(
         image_size);
 }
 
+bool wolf_legacy_video_screen_to_screen(
+    WolfLegacyVideo *video,
+    size_t source_offset,
+    size_t destination_offset,
+    int width_bytes,
+    int height)
+{
+    if (video == NULL) {
+        return false;
+    }
+
+    return wolf_vga_memory_screen_to_screen(
+        &video->memory,
+        source_offset,
+        destination_offset,
+        width_bytes,
+        height);
+}
+
 bool wolf_legacy_video_latch_to_screen(
     WolfLegacyVideo *video,
     size_t latch_offset,
