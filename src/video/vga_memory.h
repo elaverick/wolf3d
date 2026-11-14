@@ -88,13 +88,6 @@ void wolf_vga_memory_fill_rect(
  * Copy planar byte rows from one VGA page offset to another. Width is in
  * bytes per plane, matching the original VL_ScreenToScreen contract.
  */
-bool wolf_vga_memory_copy_page(
-    WolfVgaMemory *memory,
-    size_t source_offset,
-    size_t destination_offset,
-    int width_bytes,
-    int height);
-
 /* Copy a munged four-plane image into the selected page. X must be 4-aligned. */
 bool wolf_vga_memory_mem_to_screen(
     WolfVgaMemory *memory,
