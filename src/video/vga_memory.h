@@ -97,6 +97,23 @@ bool wolf_vga_memory_latch_to_screen(
     int width_bytes,
     int height);
 
+/*
+ * Scale a source column vertically and repeat it across a run of adjacent
+ * destination columns. The source is centred in the view rectangle exactly
+ * as the original compiled VGA scaler centred wall posts.
+ */
+bool wolf_vga_memory_scale_post(
+    WolfVgaMemory *memory,
+    size_t page_offset,
+    int x,
+    int view_y,
+    int view_height,
+    int post_width,
+    const uint8_t *source,
+    size_t source_size,
+    int source_height,
+    int destination_height);
+
 /* Convert a selected VGA page into a caller-owned linear indexed framebuffer. */
 bool wolf_vga_memory_present(
     const WolfVgaMemory *memory,
