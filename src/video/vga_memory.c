@@ -249,6 +249,71 @@ static bool planar_image_size(
     return source_size >= required_size;
 }
 
+bool wolf_vga_memory_copy_page(
+    WolfVgaMemory *memory,
+    size_t source_offset,
+    size_t destination_offset,
+    int width_bytes,
+    int height)
+{
+    size_t source_last_row;
+    size_t destination_last_row;
+    int row_start = 0;
+    int row_end;
+    int row_step = 1;
+    int row;
+    int plane;
+
+    if (!vga_memory_is_valid(memory) ||
+        width_bytes <= 0 || width_bytes > memory->stride_bytes ||
+        height <= 0 ||
+        (size_t)(height - 1) >
+            SIZE_MAX / (size_t)memory->stride_bytes) {
+        return false;
+    }
+
+    if (source_offset > memory->plane_size ||
+        destination_offset > memory->plane_size) {
+        return false;
+    }
+
+    source_last_row =
+        source_offset + (size_t)(height - 1) * (size_t)memory->stride_bytes;
+    destination_last_row =
+        destination_offset + (size_t)(height - 1) * (size_t)memory->stride_bytes;
+
+    if (source_last_row > memory->plane_size ||
+        destination_last_row > memory->plane_size ||
+        (size_t)width_bytes > memory->plane_size - source_last_row ||
+        (size_t)width_bytes > memory->plane_size - destination_last_row) {
+        return false;
+    }
+
+    row_end = height;
+
+    if (destination_offset > source_offset &&
+        destination_offset < source_last_row + (size_t)width_bytes) {
+        row_start = height - 1;
+        row_end = -1;
+        row_step = -1;
+    }
+
+    for (plane = 0; plane < WOLF_VGA_PLANE_COUNT; ++plane) {
+        for (row = row_start; row != row_end; row += row_step) {
+            uint8_t *destination =
+                memory->planes[plane] + destination_offset +
+                (size_t)row * (size_t)memory->stride_bytes;
+            const uint8_t *source =
+                memory->planes[plane] + source_offset +
+                (size_t)row * (size_t)memory->stride_bytes;
+
+            memmove(destination, source, (size_t)width_bytes);
+        }
+    }
+
+    return true;
+}
+
 bool wolf_vga_memory_mem_to_screen(
     WolfVgaMemory *memory,
     size_t page_offset,
