@@ -1,5 +1,6 @@
 #include "indexed_framebuffer.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 static bool framebuffer_is_valid(const WolfFramebuffer *framebuffer)
@@ -195,6 +196,63 @@ void wolf_palette_expand_vga6(
                 (uint8_t)((value << 2) | (value >> 4));
         }
     }
+}
+
+bool wolf_image_chunky_to_planar4(
+    uint8_t *image,
+    size_t image_size,
+    int width,
+    int height)
+{
+    size_t image_bytes;
+    size_t plane_row_bytes;
+    size_t plane_size;
+    uint8_t *original;
+    int plane;
+    int y;
+    int column;
+
+    if (image == NULL || width <= 0 || height <= 0 || (width & 3) != 0) {
+        return false;
+    }
+
+    if ((size_t)height > SIZE_MAX / (size_t)width) {
+        return false;
+    }
+
+    image_bytes = (size_t)width * (size_t)height;
+    if (image_size < image_bytes) {
+        return false;
+    }
+
+    plane_row_bytes = (size_t)width / 4;
+    plane_size = plane_row_bytes * (size_t)height;
+    original = malloc(image_bytes);
+    if (original == NULL) {
+        return false;
+    }
+
+    memcpy(original, image, image_bytes);
+
+    for (plane = 0; plane < 4; ++plane) {
+        for (y = 0; y < height; ++y) {
+            for (column = 0; column < (int)plane_row_bytes; ++column) {
+                size_t destination_offset =
+                    (size_t)plane * plane_size +
+                    (size_t)y * plane_row_bytes +
+                    (size_t)column;
+                size_t source_offset =
+                    (size_t)y * (size_t)width +
+                    (size_t)column * 4 +
+                    (size_t)plane;
+
+                image[destination_offset] = original[source_offset];
+            }
+        }
+    }
+
+    free(original);
+    return true;
 }
 
 bool wolf_framebuffer_blit_planar4(
