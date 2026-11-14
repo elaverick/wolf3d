@@ -158,7 +158,7 @@ static char *convert_unsigned(unsigned long value, int negative, char *buffer, i
     return buffer;
 }
 
-char *itoa(int value, char *buffer, int radix)
+char *wolf_native_itoa(int value, char *buffer, int radix)
 {
     unsigned int magnitude;
     int negative = value < 0 && radix == 10;
@@ -169,7 +169,7 @@ char *itoa(int value, char *buffer, int radix)
     return convert_unsigned(magnitude, negative, buffer, radix);
 }
 
-char *ltoa(long value, char *buffer, int radix)
+char *wolf_native_ltoa(long value, char *buffer, int radix)
 {
     unsigned long magnitude;
     int negative = value < 0 && radix == 10;
@@ -180,7 +180,7 @@ char *ltoa(long value, char *buffer, int radix)
     return convert_unsigned(magnitude, negative, buffer, radix);
 }
 
-char *ultoa(unsigned long value, char *buffer, int radix)
+char *wolf_native_ultoa(unsigned long value, char *buffer, int radix)
 {
     return convert_unsigned(value, 0, buffer, radix);
 }
