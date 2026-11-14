@@ -82,6 +82,19 @@ USL_HardError(word errval,int ax,int bp,int si)
 {
 #define IGNORE  0
 #define RETRY   1
+#define ABORT   2
+#ifdef WOLF3D_NATIVE
+    (void)errval;
+    (void)ax;
+    (void)bp;
+    (void)si;
+    /* Native file errors are fatal; no DOS retry UI exists. */
+    abortprogram = "A file-system operation failed";
+    return ABORT;
+#else
+
+#define IGNORE  0
+#define RETRY   1
 #define	ABORT   2
 extern	void	ShutdownId(void);
 
@@ -155,6 +168,11 @@ oh_kill_me:
 #undef	IGNORE
 #undef	RETRY
 #undef	ABORT
+
+#endif
+#undef IGNORE
+#undef RETRY
+#undef ABORT
 }
 #pragma	warn	+par
 #pragma	warn	+rch
@@ -604,15 +622,19 @@ US_LineInput(int x,int y,char *buf,char *def,boolean escok,
 		if (cursorvis)
 			USL_XORICursor(x,y,s,cursor);
 
+#ifndef WOLF3D_NATIVE
 	asm	pushf
 	asm	cli
+#endif
 
 		sc = LastScan;
 		LastScan = sc_None;
 		c = LastASCII;
 		LastASCII = key_None;
 
+#ifndef WOLF3D_NATIVE
 	asm	popf
+#endif
 
 		switch (sc)
 		{

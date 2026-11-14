@@ -29,7 +29,11 @@ extern	char		audioname[13];
 extern	byte 		_seg	*tinf;
 extern	int			mapon;
 
-extern	unsigned	_seg	*mapsegs[MAPPLANES];
+#ifdef WOLF3D_NATIVE
+extern word *_seg mapsegs[MAPPLANES];
+#else
+extern unsigned _seg *mapsegs[MAPPLANES];
+#endif
 extern	maptype		_seg	*mapheaderseg[NUMMAPS];
 extern	byte		_seg	*audiosegs[NUMSNDCHUNKS];
 extern	void		_seg	*grsegs[NUMCHUNKS];
@@ -50,8 +54,13 @@ extern	char		extension[5],
 			aheadname[10],
 			afilename[10];
 
-extern long		_seg *grstarts;	// array of offsets in egagraph, -1 for sparse
-extern long		_seg *audiostarts;	// array of offsets in audio / audiot
+#ifdef WOLF3D_NATIVE
+extern int32_t *_seg grstarts;
+extern int32_t *_seg audiostarts;
+#else
+extern long *_seg grstarts;
+extern long *_seg audiostarts;
+#endif
 //
 // hooks for custom cache dialogs
 //

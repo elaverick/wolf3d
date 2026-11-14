@@ -64,7 +64,11 @@ typedef struct
 byte 		_seg	*tinf;
 int			mapon;
 
-unsigned	_seg	*mapsegs[MAPPLANES];
+#ifdef WOLF3D_NATIVE
+word *_seg mapsegs[MAPPLANES];
+#else
+unsigned _seg *mapsegs[MAPPLANES];
+#endif
 maptype		_seg	*mapheaderseg[NUMMAPS];
 byte		_seg	*audiosegs[NUMSNDCHUNKS];
 void		_seg	*grsegs[NUMCHUNKS];
@@ -431,19 +435,19 @@ boolean CA_LoadFile (char *filename, memptr *ptr)
 
 void CAL_OptimizeNodes (huffnode *table)
 {
-  huffnode *node;
-  int i;
-
-  node = table;
-
-  for (i=0;i<255;i++)
-  {
-	if (node->bit0 >= 256)
-	  node->bit0 = (unsigned)(table+(node->bit0-256));
-	if (node->bit1 >= 256)
-	  node->bit1 = (unsigned)(table+(node->bit1-256));
-	node++;
-  }
+#ifdef WOLF3D_NATIVE
+    /* Encoded node indices remain offsets in the portable C decoder. */
+    (void)table;
+#else
+    huffnode *node = table;
+    int i;
+    for (i = 0; i < 255; ++i, ++node) {
+        if (node->bit0 >= 256)
+            node->bit0 = (unsigned)(table + (node->bit0 - 256));
+        if (node->bit1 >= 256)
+            node->bit1 = (unsigned)(table + (node->bit1 - 256));
+    }
+#endif
 }
 
 
@@ -1714,7 +1718,11 @@ void CA_CacheMap (int mapnum)
 		expanded = *source;
 		source++;
 		MM_GetPtr (&buffer2seg,expanded);
+#ifdef WOLF3D_NATIVE
+        CAL_CarmackExpand(source, (word *)buffer2seg, expanded);
+#else
 		CAL_CarmackExpand (source, (unsigned far *)buffer2seg,expanded);
+#endif
 		CA_RLEWexpand (((word *)buffer2seg)+1,(word *)*dest,size,
 		((mapfiletype _seg *)tinf)->RLEWtag);
 		MM_FreePtr (&buffer2seg);
@@ -1723,8 +1731,13 @@ void CA_CacheMap (int mapnum)
 		//
 		// unRLEW, skipping expanded length
 		//
+#ifdef WOLF3D_NATIVE
+        CA_RLEWexpand(source + 1, (word *)*dest, size,
+            ((mapfiletype _seg *)tinf)->RLEWtag);
+#else
 		CA_RLEWexpand (source+1, *dest,size,
 		((mapfiletype _seg *)tinf)->RLEWtag);
+#endif
 #endif
 
 		if (compressed>BUFFERSIZE)
@@ -2007,6 +2020,4 @@ void CA_CannotOpen(char *string)
  strcat(str,string);
  strcat(str,"!\n");
  Quit (str);
-#endif
-
 }

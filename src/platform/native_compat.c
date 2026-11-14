@@ -205,3 +205,18 @@ char *wolf_native_ultoa(unsigned long value, char *buffer, int radix)
 {
     return convert_unsigned(value, 0, buffer, radix);
 }
+
+/* Legacy CRT compatibility used by the original cache manager. */
+int _argc = 0;
+char **_argv = NULL;
+
+long wolf_native_filelength(int handle)
+{
+    long current = (long)lseek(handle, 0, SEEK_CUR);
+    long end = (long)lseek(handle, 0, SEEK_END);
+
+    if (current >= 0) {
+        (void)lseek(handle, current, SEEK_SET);
+    }
+    return end;
+}

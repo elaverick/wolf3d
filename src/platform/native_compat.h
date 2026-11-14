@@ -28,6 +28,14 @@
 #include <unistd.h>
 #endif
 
+#ifndef O_TEXT
+#ifdef _WIN32
+#define O_TEXT _O_TEXT
+#else
+#define O_TEXT 0
+#endif
+#endif
+
 #ifndef O_BINARY
 #ifdef _WIN32
 #define O_BINARY _O_BINARY
@@ -49,6 +57,14 @@
 #define S_IWRITE S_IWUSR
 #endif
 #endif
+#ifndef S_IFREG
+#ifdef _WIN32
+#define S_IFREG _S_IFREG
+#else
+#define S_IFREG 0100000
+#endif
+#endif
+
 #ifndef FA_ARCH
 #define FA_ARCH 0x20
 #endif
@@ -111,6 +127,14 @@ int findfirst(const char *pattern, struct ffblk *entry, int attributes);
 int findnext(struct ffblk *entry);
 
 int _dos_write(int handle, const void *buffer, unsigned count, unsigned *written);
+long wolf_native_filelength(int handle);
+#define filelength wolf_native_filelength
+
+/* Turbo C DOS startup arguments, populated by the native main entry point. */
+extern int _argc;
+extern char **_argv;
+#define harderr(handler) ((void)(handler))
+#define peekb(segment, offset) ((void)(segment), (void)(offset), 0)
 
 char *wolf_native_itoa(int value, char *buffer, int radix);
 char *wolf_native_ltoa(long value, char *buffer, int radix);
