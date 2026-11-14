@@ -60,6 +60,12 @@ typedef struct
 #ifdef WOLF3D_NATIVE
 #pragma pack(pop)
 #endif
+#ifdef WOLF3D_NATIVE
+_Static_assert(sizeof(maptype) == 38u,
+    "Native maptype must retain the original 38-byte disk layout");
+_Static_assert(sizeof(mapfiletype) == 402u,
+    "Native MAPHEAD prefix must retain its 2-byte-packed layout");
+#endif
 
 
 /*
