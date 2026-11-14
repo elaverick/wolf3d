@@ -56,6 +56,8 @@ void wolf_platform_delay_ms(uint32_t milliseconds)
 
 static void test_pc_speaker_stream_timing_and_silence(void)
 {
+    TestPCSound sound;
+
     memset(&sound, 0, sizeof(sound));
     sound.common.length = 4;
     sound.common.priority = 10;
