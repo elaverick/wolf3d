@@ -7,6 +7,8 @@
 #include "WL_DEF.H"
 #pragma hdrstop
 
+int menuitems;
+
 //
 // PRIVATE PROTOTYPES
 //

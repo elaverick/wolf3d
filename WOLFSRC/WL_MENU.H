@@ -213,7 +213,8 @@ enum
 	viewscores,
 	backtodemo,
 	quit
-} menuitems;
+};
+extern int menuitems;
 
 //
 // WL_INTER
