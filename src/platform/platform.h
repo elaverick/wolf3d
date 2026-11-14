@@ -46,6 +46,14 @@ uint64_t wolf_platform_time_ms(void);
 /* Sleep for at least the requested number of milliseconds. */
 void wolf_platform_delay_ms(uint32_t milliseconds);
 
+/* Legacy mouse-driver command bridge used by the original input code. */
+void wolf_platform_mouse_command(
+    int function,
+    int *ax,
+    int *bx,
+    int *cx,
+    int *dx);
+
 /* Release all platform resources. Safe to call with NULL. */
 void wolf_platform_destroy(WolfPlatform *platform);
 
