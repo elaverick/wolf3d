@@ -76,13 +76,14 @@ static void pump_platform_input(void)
         }
     }
 
-    /* A window close is treated like Escape in the original game's UI. */
+    /*
+     * A closed SDL window cannot be recovered by navigating the DOS-style
+     * menus. Use the native clean-exit path so configuration and managers are
+     * shut down before the SDL host is destroyed.
+     */
     if (!platform_running) {
-        Keyboard[sc_Escape] = true;
-        LastScan = sc_Escape;
-        if (key_hook != NULL) {
-            key_hook();
-        }
+        Quit(NULL);
+        return;
     }
 }
 

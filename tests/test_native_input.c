@@ -21,6 +21,13 @@ static int fake_mouse_dy;
 static uint64_t fake_time_ms;
 static boolean inject_key_on_delay;
 static boolean fake_quit_requested;
+static unsigned fake_clean_quit_count;
+
+void Quit(char *error)
+{
+    assert(error == NULL || error[0] == '\0');
+    ++fake_clean_quit_count;
+}
 
 bool wolf_platform_key_down(int scan_code)
 {
@@ -159,14 +166,16 @@ static void test_key_events_and_acknowledgement(void)
     assert(fake_time_ms >= 100);
 }
 
-static void test_window_close_becomes_escape(void)
+static void test_window_close_requests_clean_shutdown(void)
 {
     fake_quit_requested = true;
+    fake_clean_quit_count = 0;
     IN_ClearKeysDown();
 
-    assert(IN_CheckAck());
-    assert(LastScan == sc_Escape);
-    assert(Keyboard[sc_Escape]);
+    assert(!IN_CheckAck());
+    assert(fake_clean_quit_count == 1);
+    assert(LastScan == sc_None);
+    assert(!Keyboard[sc_Escape]);
 
     fake_quit_requested = false;
     IN_ClearKeysDown();
@@ -178,7 +187,7 @@ int main(void)
     assert(MousePresent);
 
     test_keyboard_control();
-    test_window_close_becomes_escape();
+    test_window_close_requests_clean_shutdown();
     test_mouse_control();
     test_key_events_and_acknowledgement();
 
