@@ -183,8 +183,7 @@ int main(int argc, char **argv)
         }
 
         text_event.type = SDL_EVENT_TEXT_INPUT;
-        text_event.text.text[0] = 'A';
-        text_event.text.text[1] = '\\0';
+        text_event.text.text = "A";
         if (!SDL_PushEvent(&text_event) ||
             !wolf_platform_pump_events(platform) ||
             wolf_platform_take_ascii() != 'A') {
