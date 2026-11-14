@@ -51,6 +51,8 @@ bool wolf_legacy_video_init(
     video->display_page_offset = WOLF_VGA_LEGACY_PAGE1_OFFSET;
     video->delay_callback = NULL;
     video->delay_userdata = NULL;
+    video->present_callback = NULL;
+    video->present_userdata = NULL;
     video->screen_faded = false;
     video->border_colour = 0;
     memset(video->palette_dac, 0, sizeof(video->palette_dac));
@@ -255,6 +257,36 @@ void wolf_legacy_video_wait_vbl(WolfLegacyVideo *video, int vbls)
     video->delay_callback((uint32_t)milliseconds, video->delay_userdata);
 }
 
+void wolf_legacy_video_set_present_callback(
+    WolfLegacyVideo *video,
+    WolfLegacyVideoPresentFn callback,
+    void *userdata)
+{
+    if (video == NULL) {
+        return;
+    }
+
+    video->present_callback = callback;
+    video->present_userdata = userdata;
+}
+
+bool wolf_legacy_video_present_current(const WolfLegacyVideo *video)
+{
+    if (video == NULL) {
+        return false;
+    }
+
+    if (video->present_callback == NULL) {
+        return true;
+    }
+
+    return video->present_callback(
+        video->framebuffer.pixels,
+        (int)video->framebuffer.pitch,
+        (const uint8_t (*)[3])video->palette_rgb,
+        video->present_userdata);
+}
+
 void wolf_legacy_video_fade_out(
     WolfLegacyVideo *video,
     int first_colour,
@@ -304,12 +336,14 @@ void wolf_legacy_video_fade_out(
             wolf_legacy_video_wait_vbl(video, 1);
             wolf_legacy_video_set_palette(
                 video, (const uint8_t (*)[3])working);
+            (void)wolf_legacy_video_present_current(video);
         }
     }
 
     wolf_legacy_video_fill_palette(
         video, target[0], target[1], target[2]);
     video->screen_faded = true;
+    (void)wolf_legacy_video_present_current(video);
 }
 
 void wolf_legacy_video_fade_in(
@@ -356,12 +390,14 @@ void wolf_legacy_video_fade_in(
             wolf_legacy_video_wait_vbl(video, 1);
             wolf_legacy_video_set_palette(
                 video, (const uint8_t (*)[3])working);
+            (void)wolf_legacy_video_present_current(video);
         }
     }
 
     wolf_legacy_video_set_palette(
         video, (const uint8_t (*)[3])target);
     video->screen_faded = false;
+    (void)wolf_legacy_video_present_current(video);
 }
 
 void wolf_legacy_video_fill_palette(
@@ -443,8 +479,12 @@ bool wolf_legacy_video_present(WolfLegacyVideo *video)
         return false;
     }
 
-    return wolf_vga_memory_present(
-        &video->memory,
-        video->display_page_offset,
-        &video->framebuffer);
+    if (!wolf_vga_memory_present(
+            &video->memory,
+            video->display_page_offset,
+            &video->framebuffer)) {
+        return false;
+    }
+
+    return wolf_legacy_video_present_current(video);
 }
