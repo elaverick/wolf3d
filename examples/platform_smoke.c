@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 static bool present_to_platform(
     const uint8_t *pixels,
@@ -72,7 +74,7 @@ static void draw_test_scene(void)
     VL_Bar(24, 176, 272, 8, 63);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     WolfPlatformConfig config = {
         "Wolfenstein 3D - native video smoke test",
@@ -82,6 +84,16 @@ int main(void)
         200
     };
     WolfPlatform *platform;
+    int frame_limit = 0;
+    int frame_count = 0;
+
+    if (argc == 3 && strcmp(argv[1], "--frames") == 0) {
+        frame_limit = atoi(argv[2]);
+        if (frame_limit < 1) {
+            fputs("Frame limit must be positive.\\n", stderr);
+            return 1;
+        }
+    }
 
     platform = wolf_platform_create(&config);
     if (platform == NULL) {
