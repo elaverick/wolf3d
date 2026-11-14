@@ -11,7 +11,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static int native_max_scale = MAXSCALEHEIGHT / 2 - 1;
+static int native_max_scale = MAXSCALEHEIGHT - 1;
 
 static void scale_native_sprite(
     int xcenter,
@@ -65,10 +65,10 @@ void SetupScaling(int maxscaleheight)
         maxscaleheight = 0;
     }
     maxscaleheight /= 2;
-    native_max_scale = maxscaleheight > 0 ? maxscaleheight - 1 : 0;
-    if (native_max_scale >= MAXSCALEHEIGHT / 2) {
-        native_max_scale = MAXSCALEHEIGHT / 2 - 1;
+    if (maxscaleheight > MAXSCALEHEIGHT) {
+        maxscaleheight = MAXSCALEHEIGHT;
     }
+    native_max_scale = maxscaleheight > 0 ? maxscaleheight - 1 : 0;
 }
 
 void ScaleShape(int xcenter, int shapenum, unsigned height)
