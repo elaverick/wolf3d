@@ -12,6 +12,7 @@
 #include <stdint.h>
 
 typedef struct WolfPlatform WolfPlatform;
+typedef void (*WolfPlatformTimerCallback)(void *userdata);
 
 typedef struct WolfPlatformConfig {
     const char *window_title;
@@ -39,6 +40,18 @@ bool wolf_platform_present_indexed(
     const uint8_t *pixels,
     int pitch,
     const uint8_t palette[256][3]);
+
+/*
+ * Start a periodic callback on a platform timer. The callback runs on the
+ * timer thread and must be thread-safe. Stop the timer before releasing any
+ * callback-owned state.
+ */
+bool wolf_platform_timer_start(
+    WolfPlatform *platform,
+    uint32_t first_interval_ms,
+    WolfPlatformTimerCallback callback,
+    void *userdata);
+void wolf_platform_timer_stop(WolfPlatform *platform);
 
 /* Monotonic time in milliseconds. */
 uint64_t wolf_platform_time_ms(void);

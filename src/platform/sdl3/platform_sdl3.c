@@ -19,6 +19,10 @@ struct WolfPlatform {
     SDL_Renderer *renderer;
     SDL_Texture *frame_texture;
     SDL_AudioStream *audio_stream;
+    SDL_TimerID game_timer;
+    WolfPlatformTimerCallback timer_callback;
+    void *timer_userdata;
+    uint8_t timer_phase;
     int framebuffer_width;
     int framebuffer_height;
     uint32_t *rgba_pixels;
@@ -437,6 +441,72 @@ bool wolf_platform_present_indexed(
     return true;
 }
 
+static Uint32 SDLCALL platform_timer_tick(
+    void *userdata, SDL_TimerID timer_id, Uint32 interval)
+{
+    WolfPlatform *platform = (WolfPlatform *)userdata;
+
+    (void)timer_id;
+    (void)interval;
+
+    if (platform == NULL || platform->timer_callback == NULL) {
+        return 0;
+    }
+
+    platform->timer_callback(platform->timer_userdata);
+
+    /*
+     * 1000 / 70 is 14 + 2/7 ms. Alternate 14 and 15 ms intervals using a
+     * fractional accumulator instead of slowly drifting at a fixed 14 ms.
+     */
+    platform->timer_phase = (uint8_t)(platform->timer_phase + 2u);
+    if (platform->timer_phase >= 7u) {
+        platform->timer_phase = (uint8_t)(platform->timer_phase - 7u);
+        return 15u;
+    }
+    return 14u;
+}
+
+bool wolf_platform_timer_start(
+    WolfPlatform *platform,
+    uint32_t first_interval_ms,
+    WolfPlatformTimerCallback callback,
+    void *userdata)
+{
+    if (platform == NULL || callback == NULL || first_interval_ms == 0) {
+        return false;
+    }
+
+    wolf_platform_timer_stop(platform);
+    platform->timer_callback = callback;
+    platform->timer_userdata = userdata;
+    platform->timer_phase = 0;
+    platform->game_timer = SDL_AddTimer(
+        first_interval_ms, platform_timer_tick, platform);
+    if (platform->game_timer == 0) {
+        platform->timer_callback = NULL;
+        platform->timer_userdata = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+void wolf_platform_timer_stop(WolfPlatform *platform)
+{
+    if (platform == NULL) {
+        return;
+    }
+
+    if (platform->game_timer != 0) {
+        (void)SDL_RemoveTimer(platform->game_timer);
+        platform->game_timer = 0;
+    }
+
+    platform->timer_callback = NULL;
+    platform->timer_userdata = NULL;
+}
+
 uint64_t wolf_platform_time_ms(void)
 {
     return SDL_GetTicks();
@@ -603,6 +673,8 @@ void wolf_platform_destroy(WolfPlatform *platform)
     if (platform == NULL) {
         return;
     }
+
+    wolf_platform_timer_stop(platform);
 
     if (active_platform == platform) {
         active_platform = NULL;

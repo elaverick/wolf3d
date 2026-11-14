@@ -9,9 +9,18 @@
 #include "platform.h"
 
 #include <stdint.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+static _Atomic unsigned smoke_timer_ticks;
+
+static void count_timer_tick(void *userdata)
+{
+    (void)userdata;
+    atomic_fetch_add_explicit(&smoke_timer_ticks, 1u, memory_order_relaxed);
+}
 
 static bool present_to_platform(
     const uint8_t *pixels,
@@ -98,6 +107,20 @@ int main(int argc, char **argv)
     platform = wolf_platform_create(&config);
     if (platform == NULL) {
         fputs("Unable to initialise SDL3 platform.\n", stderr);
+        return 1;
+    }
+
+    atomic_store_explicit(&smoke_timer_ticks, 0u, memory_order_relaxed);
+    if (!wolf_platform_timer_start(platform, 14u, count_timer_tick, NULL)) {
+        fputs("Unable to start SDL3 timer service.\n", stderr);
+        wolf_platform_destroy(platform);
+        return 1;
+    }
+    wolf_platform_delay_ms(50u);
+    wolf_platform_timer_stop(platform);
+    if (atomic_load_explicit(&smoke_timer_ticks, memory_order_relaxed) < 2u) {
+        fputs("SDL3 timer service did not deliver its callbacks.\n", stderr);
+        wolf_platform_destroy(platform);
         return 1;
     }
 

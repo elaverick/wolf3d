@@ -1,5 +1,5 @@
 /* Native SDL3 host for the original Wolfenstein 3-D game. */
-#include "native_compat.h"
+#include "ID_HEADS_NATIVE.H"
 #include "platform.h"
 #include "legacy_vl.h"
 #include <errno.h>
@@ -18,6 +18,12 @@ void WolfMain(void);
 
 static WolfPlatform *platform_at_exit;
 
+static void advance_game_clock(void *userdata)
+{
+    (void)userdata;
+    SD_TimerTick();
+}
+
 static void shutdown_platform_at_exit(void)
 {
     if (platform_at_exit != NULL) {
@@ -30,12 +36,9 @@ static bool present_frame(const uint8_t *pixels, int pitch,
     const uint8_t palette[256][3], void *userdata)
 {
     /*
-     * The original engine advances its simulation clock once per rendered
-     * frame. Keep that clock at 70 Hz instead of letting fast PCs run the
-     * simulation at an arbitrary uncapped frame rate.
-     *
-     * Express deadlines in 1/70 ms units so fractional frame durations are
-     * carried forward rather than rounded to a fixed 14 or 15 ms delay.
+     * Frame pacing is separate from simulation time. The SDL timer advances
+     * the original 70 Hz TimeCount even in menu busy-waits that do not render.
+     * Express frame deadlines in 1/70 ms units to avoid cumulative rounding.
      */
     static uint64_t next_frame_deadline;
     uint64_t now = wolf_platform_time_ms() * 70u;
@@ -135,6 +138,12 @@ int main(int argc, char **argv)
     platform_at_exit = platform;
     if (atexit(shutdown_platform_at_exit) != 0) {
         fputs("Unable to register SDL3 shutdown handler.\n", stderr);
+        shutdown_platform_at_exit();
+        return 1;
+    }
+    if (!wolf_platform_timer_start(
+            platform, 14u, advance_game_clock, NULL)) {
+        fputs("Unable to start the native 70 Hz game timer.\n", stderr);
         shutdown_platform_at_exit();
         return 1;
     }

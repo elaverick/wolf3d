@@ -197,7 +197,13 @@ extern	SDSMode		DigiMode;
 extern	SMMode		MusicMode;
 extern	boolean		DigiPlaying;
 extern	int			DigiMap[];
-extern	longword	TimeCount;					// Global time in ticks
+#ifdef WOLF3D_NATIVE
+#include <stdatomic.h>
+extern _Atomic longword TimeCount;
+extern void SD_TimerTick(void);
+#else
+extern longword TimeCount;
+#endif
 
 // Function prototypes
 extern	void	SD_Startup(void),

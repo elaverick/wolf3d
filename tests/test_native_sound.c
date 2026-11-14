@@ -148,11 +148,36 @@ static void test_missing_audio_device_and_chunk(void)
     assert(SD_PlaySound(HEARTBEATSND) == false);
 }
 
+static void test_game_clock_uses_external_timer_ticks(void)
+{
+    unsigned index;
+
+    SD_Shutdown();
+    TimeCount = 0;
+    SD_TimerTick();
+    assert(TimeCount == 0);
+
+    SD_Startup();
+    assert(TimeCount == 0);
+    for (index = 0; index < 70; ++index) {
+        SD_TimerTick();
+    }
+    assert(TimeCount == 70);
+
+    SD_Poll();
+    assert(TimeCount == 70);
+
+    SD_Shutdown();
+    SD_TimerTick();
+    assert(TimeCount == 70);
+}
+
 int main(void)
 {
     test_pc_speaker_stream_timing_and_silence();
     test_priority_and_replacement();
     test_missing_audio_device_and_chunk();
+    test_game_clock_uses_external_timer_ticks();
     SD_Shutdown();
     puts("native sound tests passed");
     return 0;
