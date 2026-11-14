@@ -136,7 +136,7 @@ int main(void)
      * pages, but an explicitly locked page must remain resident.
      */
     PM_SetMainMemPurge(3);
-    PM_Purge();
+    MM_Purge();
     assert(PM_GetPageAddress(0) == NULL);
     assert(PM_GetPageAddress(1) == NULL);
     assert(PM_GetPageAddress(2) != NULL);

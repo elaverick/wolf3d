@@ -119,6 +119,9 @@ void MM_Purge(void)
 {
     unsigned level;
 
+    /* VSWAP pages use a separate heap-backed cache; trim it as well. */
+    PM_Purge();
+
     for (level = 3u; level > 0u; --level) {
         while (purge_one(level)) {
             /* Reclaim every eligible allocation at this level. */
@@ -131,6 +134,16 @@ static void *allocate_with_purge(size_t size)
     void *address;
     unsigned level;
 
+    address = malloc(size);
+    if (address != NULL) {
+        return address;
+    }
+
+    /*
+     * VSWAP pages are not ordinary MM allocations. Let the page manager
+     * release unlocked LRU pages before retrying the general native heap.
+     */
+    PM_Purge();
     address = malloc(size);
     if (address != NULL) {
         return address;
