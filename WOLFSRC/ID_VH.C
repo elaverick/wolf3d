@@ -37,6 +37,38 @@ void	VWL_UpdateScreenBlocks (void);
 
 //==========================================================================
 
+#ifdef WOLF3D_NATIVE
+void VW_DrawPropString(char far *string)
+{
+    fontstruct *font = (fontstruct *)grsegs[STARTFONT + fontnumber];
+    int height = font->height;
+    int start_x = px;
+    int total_width = 0;
+    byte character;
+
+    bufferheight = height;
+    while ((character = (byte)*string++) != 0) {
+        int width = (unsigned char)font->width[character];
+        const byte *glyph = (const byte *)font + font->location[character];
+        int column;
+
+        for (column = 0; column < width; ++column) {
+            int row;
+            for (row = 0; row < height; ++row) {
+                if (glyph[(size_t)row * (size_t)width] != 0) {
+                    VL_Plot(px + column, py + row, fontcolor);
+                }
+            }
+            ++glyph;
+        }
+        px += width;
+        total_width += width;
+    }
+
+    bufferwidth = (((start_x + total_width + 3) & ~3) -
+        (start_x & ~3));
+}
+#else
 void VW_DrawPropString (char far *string)
 {
 	fontstruct	far	*font;
@@ -93,6 +125,45 @@ bufferwidth = ((dest+1)-origdest)*4;
 }
 
 
+
+#endif
+
+#ifdef WOLF3D_NATIVE
+void VW_DrawColorPropString(char far *string)
+{
+    fontstruct *font = (fontstruct *)grsegs[STARTFONT + fontnumber];
+    int height = font->height;
+    int start_x = px;
+    int total_width = 0;
+    byte character;
+
+    bufferheight = height;
+    while ((character = (byte)*string++) != 0) {
+        int width = (unsigned char)font->width[character];
+        const byte *glyph = (const byte *)font + font->location[character];
+        int column;
+
+        for (column = 0; column < width; ++column) {
+            int row;
+            int colour = fontcolor;
+            for (row = 0; row < height; ++row) {
+                if (((height - row) & 1) != 0) {
+                    ++colour;
+                }
+                if (glyph[(size_t)row * (size_t)width] != 0) {
+                    VL_Plot(px + column, py + row, colour & 0xff);
+                }
+            }
+            ++glyph;
+        }
+        px += width;
+        total_width += width;
+    }
+
+    bufferwidth = (((start_x + total_width + 3) & ~3) -
+        (start_x & ~3));
+}
+#else
 void VW_DrawColorPropString (char far *string)
 {
 	fontstruct	far	*font;
@@ -155,6 +226,9 @@ bufferheight = height;
 bufferwidth = ((dest+1)-origdest)*4;
 }
 
+
+
+#endif
 
 //==========================================================================
 
@@ -468,6 +542,60 @@ void LoadLatchMem (void)
 
 extern	ControlInfo	c;
 
+#ifdef WOLF3D_NATIVE
+boolean FizzleFade(unsigned source, unsigned dest,
+    unsigned width, unsigned height, unsigned frames, boolean abortable)
+{
+    WolfLegacyVideo *video = VL_GetVideo();
+    uint32_t state = 1;
+    unsigned pixels_per_frame;
+    unsigned frame;
+
+    if (video == NULL || width == 0 || height == 0 || frames == 0) {
+        return false;
+    }
+
+    pixels_per_frame = (320u * 200u) / frames;
+    IN_StartAck();
+
+    for (frame = 0; frame < frames; ++frame) {
+        unsigned pixel;
+        for (pixel = 0; pixel < pixels_per_frame; ++pixel) {
+            unsigned y = (state & 0xffu) - 1u;
+            unsigned x = (state >> 8) & 0x1ffu;
+            uint32_t old_state = state;
+
+            state >>= 1;
+            if ((old_state & 1u) != 0) {
+                state ^= 0x00012000u;
+            }
+
+            if (x < width && y < height) {
+                unsigned plane = x & 3u;
+                size_t source_offset = (size_t)source + ylookup[y] + (x >> 2);
+                size_t destination_offset = (size_t)dest + ylookup[y] + (x >> 2);
+
+                if (source_offset < video->memory.plane_size &&
+                    destination_offset < video->memory.plane_size) {
+                    video->memory.planes[plane][destination_offset] =
+                        video->memory.planes[plane][source_offset];
+                }
+            }
+
+            if (state == 1u) {
+                return false;
+            }
+        }
+
+        if (abortable && IN_CheckAck()) {
+            return true;
+        }
+        VL_WaitVBL(1);
+    }
+
+    return false;
+}
+#else
 boolean FizzleFade (unsigned source, unsigned dest,
 	unsigned width,unsigned height, unsigned frames, boolean abortable)
 {
@@ -545,3 +673,4 @@ noxor:
 
 
 }
+#endif

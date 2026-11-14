@@ -1059,7 +1059,7 @@ void CAL_SetupGrFile (void)
 //
 // load the data offsets from ???head.ext
 //
-	MM_GetPtr (&(memptr)grstarts,(NUMCHUNKS+1)*FILEPOSSIZE);
+	MM_GetPtr ((memptr *)&grstarts,(NUMCHUNKS+1)*FILEPOSSIZE);
 
 	strcpy(fname,gheadname);
 	strcat(fname,extension);
@@ -1089,7 +1089,7 @@ void CAL_SetupGrFile (void)
 //
 // load the pic and sprite headers into the arrays in the data segment
 //
-	MM_GetPtr(&(memptr)pictable,NUMPICS*sizeof(pictabletype));
+	MM_GetPtr((memptr *)&pictable,NUMPICS*sizeof(pictabletype));
 	CAL_GetGrChunkLength(STRUCTPIC);		// position file pointer
 	MM_GetPtr(&compseg,chunkcomplen);
 	CA_FarRead (grhandle,compseg,chunkcomplen);
@@ -1127,7 +1127,7 @@ void CAL_SetupMapFile (void)
 		CA_CannotOpen(fname);
 
 	length = filelength(handle);
-	MM_GetPtr (&(memptr)tinf,length);
+	MM_GetPtr ((memptr *)&tinf,length);
 	CA_FarRead(handle, tinf, length);
 	close(handle);
 #else
@@ -1164,8 +1164,8 @@ void CAL_SetupMapFile (void)
 		if (pos<0)						// $FFFFFFFF start is a sparse map
 			continue;
 
-		MM_GetPtr(&(memptr)mapheaderseg[i],sizeof(maptype));
-		MM_SetLock(&(memptr)mapheaderseg[i],true);
+		MM_GetPtr((memptr *)&mapheaderseg[i],sizeof(maptype));
+		MM_SetLock((memptr *)&mapheaderseg[i],true);
 		lseek(maphandle,pos,SEEK_SET);
 		CA_FarRead (maphandle,(memptr)mapheaderseg[i],sizeof(maptype));
 	}
@@ -1176,11 +1176,11 @@ void CAL_SetupMapFile (void)
 	for (i=0;i<MAPPLANES;i++)
 	{
 		#ifdef WOLF3D_NATIVE
-        MM_GetPtr (&(memptr)mapsegs[i],64*64*sizeof(unsigned));
+        MM_GetPtr ((memptr *)&mapsegs[i],64*64*sizeof(unsigned));
 #else
-		MM_GetPtr (&(memptr)mapsegs[i],64*64*2);
+		MM_GetPtr ((memptr *)&mapsegs[i],64*64*2);
 #endif
-		MM_SetLock (&(memptr)mapsegs[i],true);
+		MM_SetLock ((memptr *)&mapsegs[i],true);
 	}
 }
 
@@ -1214,7 +1214,7 @@ void CAL_SetupAudioFile (void)
 		CA_CannotOpen(fname);
 
 	length = filelength(handle);
-	MM_GetPtr (&(memptr)audiostarts,length);
+	MM_GetPtr ((memptr *)&audiostarts,length);
 	CA_FarRead(handle, (byte far *)audiostarts, length);
 	close(handle);
 #else
@@ -1323,7 +1323,7 @@ void CA_CacheAudioChunk (int chunk)
         return;
 	if (audiosegs[chunk])
 	{
-		MM_SetPurge (&(memptr)audiosegs[chunk],0);
+		MM_SetPurge ((memptr *)&audiosegs[chunk],0);
 		return;							// allready in memory
 	}
 
@@ -1338,7 +1338,7 @@ void CA_CacheAudioChunk (int chunk)
 
 #ifndef AUDIOHEADERLINKED
 
-	MM_GetPtr (&(memptr)audiosegs[chunk],compressed);
+	MM_GetPtr ((memptr *)&audiosegs[chunk],compressed);
 	if (mmerror)
 		return;
 
@@ -1363,7 +1363,7 @@ void CA_CacheAudioChunk (int chunk)
 
 	expanded = *(long far *)source;
 	source += 4;			// skip over length
-	MM_GetPtr (&(memptr)audiosegs[chunk],expanded);
+	MM_GetPtr ((memptr *)&audiosegs[chunk],expanded);
 	if (mmerror)
 		goto done;
 	CAL_HuffExpand (source,audiosegs[chunk],expanded,audiohuffman,false);
@@ -1404,7 +1404,7 @@ void CA_LoadAllSounds (void)
 
 	for (i=0;i<NUMSOUNDS;i++,start++)
 		if (audiosegs[start])
-			MM_SetPurge (&(memptr)audiosegs[start],3);		// make purgable
+			MM_SetPurge ((memptr *)&audiosegs[start],3);		// make purgable
 
 cachein:
 
@@ -1606,14 +1606,14 @@ void CA_CacheScreen (int chunk)
         return;
     }
     CAL_HuffExpand(source, (byte *)decoded_buffer, expanded, grhuffman, false);
-    if (expanded < (long)(320u * 200u) ||
-        !VL_MemToScreen((byte *)decoded_buffer, 320, 200, 0, 0)) {
+    if (expanded < (long)(320u * 200u)) {
         MM_FreePtr(&decoded_buffer);
         MM_FreePtr(&compressed_buffer);
         Quit("CA_CacheScreen: decoded screen is not 320x200 planar data");
         return;
     }
 
+    VL_MemToScreen((byte *)decoded_buffer, 320, 200, 0, 0);
     VW_MarkUpdateBlock(0, 0, 319, 199);
     MM_FreePtr(&decoded_buffer);
     MM_FreePtr(&compressed_buffer);
@@ -1699,7 +1699,7 @@ void CA_CacheMap (int mapnum)
 		pos = mapheaderseg[mapnum]->planestart[plane];
 		compressed = mapheaderseg[mapnum]->planelength[plane];
 
-		dest = &(memptr)mapsegs[plane];
+		dest = (memptr *)&mapsegs[plane];
 
 		lseek(maphandle,pos,SEEK_SET);
 		if (compressed<=BUFFERSIZE)
@@ -1739,7 +1739,7 @@ void CA_CacheMap (int mapnum)
         CA_RLEWexpand(source + 1, (unsigned *)*dest, size,
             ((mapfiletype _seg *)tinf)->RLEWtag);
 #else
-		CA_RLEWexpand (source+1, *dest,size,
+		CA_RLEWexpand (source+1, (unsigned *)*dest,size,
 		((mapfiletype _seg *)tinf)->RLEWtag);
 #endif
 #endif
@@ -1771,7 +1771,7 @@ void CA_UpLevel (void)
 
 	for (i=0;i<NUMCHUNKS;i++)
 		if (grsegs[i])
-			MM_SetPurge (&(memptr)grsegs[i],3);
+			MM_SetPurge ((memptr *)&grsegs[i],3);
 	ca_levelbit<<=1;
 	ca_levelnum++;
 }
@@ -1862,7 +1862,7 @@ void CA_SetGrPurge (void)
 
 	for (i=0;i<NUMCHUNKS;i++)
 		if (grsegs[i])
-			MM_SetPurge (&(memptr)grsegs[i],3);
+			MM_SetPurge ((memptr *)&grsegs[i],3);
 }
 
 
@@ -1887,7 +1887,7 @@ void CA_SetAllPurge (void)
 //
 	for (i=0;i<NUMSNDCHUNKS;i++)
 		if (audiosegs[i])
-			MM_SetPurge (&(memptr)audiosegs[i],3);
+			MM_SetPurge ((memptr *)&audiosegs[i],3);
 
 //
 // free graphics
