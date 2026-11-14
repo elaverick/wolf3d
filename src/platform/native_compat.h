@@ -99,8 +99,8 @@
 typedef struct ffblk {
     char ff_name[260];
 #ifdef _WIN32
-    HANDLE handle;
-    WIN32_FIND_DATAA find_data;
+    void *handle;
+    void *find_data;
 #else
     glob_t matches;
     size_t index;
