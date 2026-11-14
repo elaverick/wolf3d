@@ -91,6 +91,19 @@ static void test_image_and_text_api(void)
     assert(framebuffer->pixels[7] == 7);
     assert(framebuffer->pixels[7 * 320 + 7] == 14);
 
+    /* ScreenToScreen uses absolute per-plane VGA offsets, not bufferofs. */
+    VL_Bar(0, 0, 4, 2, 0x44);
+    VL_ScreenToScreen(
+        WOLF_VGA_LEGACY_PAGE3_OFFSET,
+        WOLF_VGA_LEGACY_PAGE3_OFFSET + 4,
+        1,
+        2);
+    assert(VL_Present());
+    assert(framebuffer->pixels[16] == 0x44);
+    assert(framebuffer->pixels[19] == 0x44);
+    assert(framebuffer->pixels[320 + 16] == 0x44);
+    assert(framebuffer->pixels[320 + 19] == 0x44);
+
     memset(tile_data + 65 * 64, 0xaa, 64);
     VL_DrawTile8String("A", (const char *)tile_data, 8, 8);
     assert(VL_Present());
