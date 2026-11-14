@@ -105,6 +105,14 @@ bool wolf_vga_memory_mem_to_latch(
     size_t source_size);
 
 /* Draw a rectangle from the four latch planes into a page. X must be 4-aligned. */
+/* Copy a rectangle between offsets in the planar VGA address space. */
+bool wolf_vga_memory_screen_to_screen(
+    WolfVgaMemory *memory,
+    size_t source_offset,
+    size_t destination_offset,
+    int width_bytes,
+    int height);
+
 bool wolf_vga_memory_latch_to_screen(
     WolfVgaMemory *memory,
     size_t source_offset,
