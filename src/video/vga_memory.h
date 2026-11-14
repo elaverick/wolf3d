@@ -17,12 +17,29 @@
 
 #define WOLF_VGA_PLANE_COUNT 4
 
+/* Original Wolfenstein VGA memory layout from WL_DEF.H and ID_VL.H. */
+#define WOLF_VGA_LEGACY_PLANE_SIZE 65536u
+#define WOLF_VGA_LEGACY_STRIDE_BYTES 80
+#define WOLF_VGA_LEGACY_SCANLINES 208
+#define WOLF_VGA_LEGACY_PAGE_SIZE \
+    (WOLF_VGA_LEGACY_STRIDE_BYTES * WOLF_VGA_LEGACY_SCANLINES)
+#define WOLF_VGA_LEGACY_PAGE1_OFFSET 0u
+#define WOLF_VGA_LEGACY_PAGE2_OFFSET WOLF_VGA_LEGACY_PAGE_SIZE
+#define WOLF_VGA_LEGACY_PAGE3_OFFSET (WOLF_VGA_LEGACY_PAGE_SIZE * 2u)
+#define WOLF_VGA_LEGACY_LATCH_OFFSET (WOLF_VGA_LEGACY_PAGE_SIZE * 3u)
+
 typedef struct WolfVgaMemory {
     uint8_t *planes[WOLF_VGA_PLANE_COUNT];
     size_t plane_size;
     int stride_bytes;
     int height;
 } WolfVgaMemory;
+
+/* Bind the original 64 KiB VGA planes and 80-byte, 208-line page layout. */
+bool wolf_vga_memory_init_legacy(
+    WolfVgaMemory *memory,
+    uint8_t *storage,
+    size_t storage_size);
 
 /* Bind four equally sized planes to caller-owned storage. */
 bool wolf_vga_memory_init(
