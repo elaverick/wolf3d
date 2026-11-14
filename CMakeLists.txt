@@ -179,6 +179,7 @@ if(BUILD_TESTING)
     add_executable(test_native_input
         tests/test_native_input.c
         src/platform/native_input.c
+        src/platform/native_sound.c
     )
 
     target_include_directories(test_native_input
@@ -260,6 +261,7 @@ if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
         WOLFSRC/WL_AGENT.C
         WOLFSRC/WL_DRAW.C
         WOLFSRC/WL_GAME.C
+        WOLFSRC/WL_MAIN.C
         WOLFSRC/ID_CA.C
         WOLFSRC/ID_US_1.C
         WOLFSRC/ID_VH.C
@@ -270,8 +272,6 @@ if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
         WOLFSRC/WL_TEXT.C
         src/platform/native_input.c
         src/platform/native_scaling.c
-        src/platform/native_memory_manager.c
-        src/platform/native_page_manager.c
         src/video/native_raycaster.c
     )
 
@@ -326,6 +326,28 @@ if(WOLF3D_BUILD_SDL3_PLATFORM)
             target_compile_options(wolf3d_platform PRIVATE /W4 /WX)
         else()
             target_compile_options(wolf3d_platform PRIVATE -Wall -Wextra -Wpedantic -Werror)
+        endif()
+
+        if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
+            add_executable(wolf3d_native
+                src/platform/native_game_main.c
+                $<TARGET_OBJECTS:wolf3d_game_objects>
+            )
+
+            target_include_directories(wolf3d_native PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/WOLFSRC
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/platform
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/video
+            )
+
+            target_compile_definitions(wolf3d_native PRIVATE WOLF3D_NATIVE SDL_MAIN_HANDLED _CRT_SECURE_NO_WARNINGS)
+            target_link_libraries(wolf3d_native PRIVATE wolf3d_platform wolf3d_legacy_vl wolf3d_native_runtime wolf3d_native_compat)
+
+            if(MSVC)
+                target_compile_options(wolf3d_native PRIVATE /W4)
+            else()
+                target_compile_options(wolf3d_native PRIVATE -Wall -Wextra -Wpedantic)
+            endif()
         endif()
 
         if(WOLF3D_BUILD_PLATFORM_SMOKE_TEST)
