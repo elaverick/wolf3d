@@ -464,7 +464,7 @@ void PollControls (void)
 	{
 		while (TimeCount<lasttimecount+DEMOTICS)
 		;
-		TimeCount = lasttimecount + DEMOTICS;
+		WOLF_SET_TIMECNT(lasttimecount + DEMOTICS);
 		lasttimecount += DEMOTICS;
 		tics = DEMOTICS;
 	}
@@ -475,7 +475,7 @@ void PollControls (void)
 //
 		while (TimeCount<lasttimecount+DEMOTICS)
 		;
-		TimeCount = lasttimecount + DEMOTICS;
+		WOLF_SET_TIMECNT(lasttimecount + DEMOTICS);
 		lasttimecount += DEMOTICS;
 		tics = DEMOTICS;
 	}
@@ -1368,7 +1368,9 @@ void PlayLoop (void)
 	int		give;
 	int	helmetangle;
 
-	playstate = TimeCount = lasttimecount = 0;
+	playstate = 0;
+	lasttimecount = 0;
+	WOLF_SET_TIMECNT(0);
 	frameon = 0;
 	running = false;
 	anglefrac = 0;
