@@ -423,6 +423,82 @@ bool wolf_vga_memory_latch_to_screen(
     return true;
 }
 
+bool wolf_vga_memory_scale_post(
+    WolfVgaMemory *memory,
+    size_t page_offset,
+    int x,
+    int view_y,
+    int view_height,
+    int post_width,
+    const uint8_t *source,
+    size_t source_size,
+    int source_height,
+    int destination_height)
+{
+    int64_t top;
+    int64_t bottom;
+    int64_t left;
+    int64_t right;
+    int64_t clipped_top;
+    int64_t clipped_bottom;
+    int64_t destination_y;
+
+    if (!vga_memory_is_valid(memory) || source == NULL ||
+        view_height <= 0 || post_width <= 0 ||
+        source_height <= 0 || destination_height <= 0 ||
+        source_size < (size_t)source_height) {
+        return false;
+    }
+
+    top = (int64_t)view_y +
+        ((int64_t)view_height - destination_height) / 2;
+    bottom = top + destination_height;
+    left = x;
+    right = left + post_width;
+
+    if (left < 0) left = 0;
+    if (right > (int64_t)memory->stride_bytes * 4) {
+        right = (int64_t)memory->stride_bytes * 4;
+    }
+
+    clipped_top = top;
+    clipped_bottom = bottom;
+
+    if (clipped_top < view_y) clipped_top = view_y;
+    if (clipped_bottom > (int64_t)view_y + view_height) {
+        clipped_bottom = (int64_t)view_y + view_height;
+    }
+    if (clipped_top < 0) clipped_top = 0;
+    if (clipped_bottom > memory->height) {
+        clipped_bottom = memory->height;
+    }
+
+    if (left >= right || clipped_top >= clipped_bottom) {
+        return true;
+    }
+
+    for (destination_y = clipped_top;
+         destination_y < clipped_bottom;
+         ++destination_y) {
+        uint64_t relative_y = (uint64_t)(destination_y - top);
+        size_t source_y = (size_t)(
+            ((relative_y + 1) * (uint64_t)source_height - 1) /
+            (uint64_t)destination_height);
+        int64_t destination_x;
+
+        for (destination_x = left; destination_x < right; ++destination_x) {
+            wolf_vga_memory_plot(
+                memory,
+                page_offset,
+                (int)destination_x,
+                (int)destination_y,
+                source[source_y]);
+        }
+    }
+
+    return true;
+}
+
 bool wolf_vga_memory_present(
     const WolfVgaMemory *memory,
     size_t display_offset,
