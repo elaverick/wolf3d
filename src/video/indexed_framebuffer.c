@@ -1,6 +1,5 @@
 #include "indexed_framebuffer.h"
 
-#include <limits.h>
 #include <string.h>
 
 static bool framebuffer_is_valid(const WolfFramebuffer *framebuffer)
@@ -183,40 +182,45 @@ void wolf_framebuffer_copy(
     int width,
     int height)
 {
-    int64_t left_clip;
-    int64_t top_clip;
-    int64_t right_clip;
-    int64_t bottom_clip;
-    int64_t row;
-    int row_start;
+    int64_t left_clip = 0;
+    int64_t top_clip = 0;
+    int64_t right_clip = width;
+    int64_t bottom_clip = height;
+    int row_start = 0;
     int row_end;
-    int row_step;
+    int row_step = 1;
+    int row;
 
     if (!framebuffer_is_valid(destination) || !framebuffer_is_valid(source) ||
         width <= 0 || height <= 0) {
         return;
     }
 
-    left_clip = 0;
-    top_clip = 0;
-    right_clip = width;
-    bottom_clip = height;
-
-    if (source_x < 0) left_clip = -((int64_t)source_x);
-    if (source_y < 0) top_clip = -((int64_t)source_y);
-    if (destination_x < 0 && -(int64_t)destination_x > left_clip)
+    if (source_x < 0) {
+        left_clip = -(int64_t)source_x;
+    }
+    if (source_y < 0) {
+        top_clip = -(int64_t)source_y;
+    }
+    if (destination_x < 0 && -(int64_t)destination_x > left_clip) {
         left_clip = -(int64_t)destination_x;
-    if (destination_y < 0 && -(int64_t)destination_y > top_clip)
+    }
+    if (destination_y < 0 && -(int64_t)destination_y > top_clip) {
         top_clip = -(int64_t)destination_y;
+    }
 
-    if ((int64_t)source_x + right_clip > source->width)
+    if ((int64_t)source_x + right_clip > source->width) {
         right_clip = (int64_t)source->width - source_x;
-    if ((int64_t)destination_x + right_clip > destination->width)
+    }
+    if ((int64_t)destination_x + right_clip > destination->width) {
         right_clip = (int64_t)destination->width - destination_x;
-    if ((int64_t)source_y + bottom_clip > source->height)
+    }
+    if ((int64_t)source_y + bottom_clip > source->height) {
         bottom_clip = (int64_t)source->height - source_y;
-    if ((int64_t)destination_y + bottom_clip > destination->height)
+    }
+    if ((int64_t)destination_y + bottom_clip > destination->height) {
         bottom_clip = (int64_t)destination->height - destination_y;
+    }
 
     if (left_clip >= right_clip || top_clip >= bottom_clip) {
         return;
@@ -226,11 +230,12 @@ void wolf_framebuffer_copy(
     source_y += (int)top_clip;
     destination_x += (int)left_clip;
     destination_y += (int)top_clip;
-
-    row_start = 0;
     row_end = (int)(bottom_clip - top_clip);
-    row_step = 1;
 
+    /*
+     * When the destination is below the source in the same storage, copy
+     * bottom-up. memmove handles horizontal overlap within each row.
+     */
     if (source->pixels == destination->pixels &&
         destination_y > source_y &&
         destination_y < source_y + row_end) {
@@ -242,11 +247,11 @@ void wolf_framebuffer_copy(
     for (row = row_start; row != row_end; row += row_step) {
         uint8_t *destination_row =
             destination->pixels +
-            (size_t)(destination_y + (int)row) * destination->pitch +
+            (size_t)(destination_y + row) * destination->pitch +
             (size_t)destination_x;
         const uint8_t *source_row =
             source->pixels +
-            (size_t)(source_y + (int)row) * source->pitch +
+            (size_t)(source_y + row) * source->pitch +
             (size_t)source_x;
 
         memmove(destination_row, source_row, (size_t)(right_clip - left_clip));
