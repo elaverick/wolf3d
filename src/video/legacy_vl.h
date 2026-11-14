@@ -69,6 +69,11 @@ void VL_MemToScreen(
     uint8_t *source, int width, int height, int x, int y);
 void VL_MaskedToScreen(
     uint8_t *source, int width, int height, int x, int y);
+void VL_DrawTile8String(
+    const char *text, const uint8_t *tile8_data, int x, int y);
+void VL_DrawLatch8String(
+    const char *text, unsigned tile8_offset, int x, int y);
+void VL_SizeTile8String(const char *text, int *width, int *height);
 void VL_TestPaletteSet(void);
 
 /* Native presentation accessors; the host submits these to wolf_platform. */
