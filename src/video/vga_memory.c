@@ -1,5 +1,6 @@
 #include "vga_memory.h"
 
+#include <limits.h>
 #include <string.h>
 
 static bool vga_memory_is_valid(const WolfVgaMemory *memory)
@@ -34,7 +35,7 @@ bool wolf_vga_memory_init(
     int plane;
 
     if (memory == NULL || storage == NULL ||
-        stride_bytes <= 0 || height <= 0 ||
+        stride_bytes <= 0 || stride_bytes > INT_MAX / 4 || height <= 0 ||
         plane_size == 0 ||
         (size_t)height > SIZE_MAX / (size_t)stride_bytes) {
         return false;
@@ -260,13 +261,30 @@ bool wolf_vga_memory_mem_to_screen(
         return false;
     }
 
-    destination_start =
-        page_offset + (size_t)y * (size_t)memory->stride_bytes + (size_t)x / 4;
+    if (page_offset > memory->plane_size) {
+        return false;
+    }
+
+    {
+        size_t row_offset =
+            (size_t)y * (size_t)memory->stride_bytes + (size_t)x / 4;
+
+        if (row_offset > memory->plane_size - page_offset) {
+            return false;
+        }
+
+        destination_start = page_offset + row_offset;
+    }
+
+    if ((size_t)(height - 1) >
+        (SIZE_MAX - destination_start) / (size_t)memory->stride_bytes) {
+        return false;
+    }
+
     destination_last_row =
         destination_start + (size_t)(height - 1) * (size_t)memory->stride_bytes;
 
-    if (destination_start > memory->plane_size ||
-        destination_last_row > memory->plane_size ||
+    if (destination_last_row > memory->plane_size ||
         row_bytes > memory->plane_size - destination_last_row) {
         return false;
     }
@@ -348,15 +366,32 @@ bool wolf_vga_memory_latch_to_screen(
     }
 
     source_size = (size_t)width_bytes * (size_t)height;
-    destination_start =
-        page_offset + (size_t)y * (size_t)memory->stride_bytes + (size_t)x / 4;
+    if (source_offset > memory->plane_size ||
+        source_size > memory->plane_size - source_offset ||
+        page_offset > memory->plane_size) {
+        return false;
+    }
+
+    {
+        size_t row_offset =
+            (size_t)y * (size_t)memory->stride_bytes + (size_t)x / 4;
+
+        if (row_offset > memory->plane_size - page_offset) {
+            return false;
+        }
+
+        destination_start = page_offset + row_offset;
+    }
+
+    if ((size_t)(height - 1) >
+        (SIZE_MAX - destination_start) / (size_t)memory->stride_bytes) {
+        return false;
+    }
+
     destination_last_row =
         destination_start + (size_t)(height - 1) * (size_t)memory->stride_bytes;
 
-    if (source_offset > memory->plane_size ||
-        source_size > memory->plane_size - source_offset ||
-        destination_start > memory->plane_size ||
-        destination_last_row > memory->plane_size ||
+    if (destination_last_row > memory->plane_size ||
         (size_t)width_bytes > memory->plane_size - destination_last_row) {
         return false;
     }
@@ -400,17 +435,25 @@ bool wolf_vga_memory_present(
 
     if (!vga_memory_is_valid(memory) ||
         destination == NULL || destination->pixels == NULL ||
+        destination->width <= 0 || destination->height <= 0 ||
+        destination->pitch < (size_t)destination->width ||
         destination->width > memory->stride_bytes * 4 ||
-        destination->height > memory->height) {
+        destination->height > memory->height ||
+        display_offset > memory->plane_size) {
         return false;
     }
 
     for (y = 0; y < destination->height; ++y) {
-        size_t row_offset =
-            display_offset + (size_t)y * (size_t)memory->stride_bytes;
+        size_t row_offset;
+        size_t row_delta = (size_t)y * (size_t)memory->stride_bytes;
 
-        if (row_offset > memory->plane_size ||
-            (size_t)(destination->width - 1) / 4 >= memory->plane_size - row_offset) {
+        if (row_delta > memory->plane_size - display_offset) {
+            return false;
+        }
+        row_offset = display_offset + row_delta;
+
+        if ((size_t)(destination->width - 1) / 4 >=
+            memory->plane_size - row_offset) {
             return false;
         }
 
