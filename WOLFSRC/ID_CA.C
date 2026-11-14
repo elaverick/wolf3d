@@ -15,6 +15,9 @@ loaded into the data segment
 */
 
 #include "ID_HEADS.H"
+#ifdef WOLF3D_NATIVE
+#include "native_map_codec.h"
+#endif
 #pragma hdrstop
 
 #pragma warn -pro
@@ -1714,21 +1717,43 @@ void CA_CacheMap (int mapnum)
 		CA_FarRead(maphandle,(byte far *)source,compressed);
 #ifdef CARMACIZED
 		//
-		// unhuffman, then unRLEW
-		// The huffman'd chunk has a two byte expanded length first
-		// The resulting RLEW chunk also does, even though it's not really
-		// needed
+		// Carmack-expand the map plane, then RLEW-expand it into map memory.
+		// The compressed plane starts with a word containing the Carmack
+		// output byte count; decoded data starts with an RLEW size word.
 		//
 		expanded = *source;
 		source++;
 		MM_GetPtr (&buffer2seg,expanded);
 #ifdef WOLF3D_NATIVE
-        CAL_CarmackExpand(source, (word *)buffer2seg, expanded);
+        if (compressed < (long)sizeof(word) ||
+            expanded < (long)sizeof(word) ||
+            (expanded & 1) != 0 ||
+            !wolf_native_carmack_expand(
+                (const byte *)source,
+                (size_t)(compressed - (long)sizeof(word)),
+                (uint16_t *)buffer2seg,
+                (size_t)expanded)) {
+            MM_FreePtr(&buffer2seg);
+            if (compressed > BUFFERSIZE) MM_FreePtr(&bigbufferseg);
+            Quit("CA_CacheMap: invalid Carmack-compressed plane");
+            return;
+        }
+        if (!wolf_native_rlew_expand(
+                ((const uint16_t *)buffer2seg) + 1,
+                (size_t)expanded / sizeof(uint16_t) - 1u,
+                (unsigned *)*dest,
+                (size_t)size / sizeof(unsigned),
+                ((mapfiletype _seg *)tinf)->RLEWtag)) {
+            MM_FreePtr(&buffer2seg);
+            if (compressed > BUFFERSIZE) MM_FreePtr(&bigbufferseg);
+            Quit("CA_CacheMap: invalid RLEW-compressed plane");
+            return;
+        }
 #else
 		CAL_CarmackExpand (source, (unsigned far *)buffer2seg,expanded);
-#endif
-		CA_RLEWexpand (((word *)buffer2seg)+1,(unsigned *)*dest,size,
+		CA_RLEWexpand (((unsigned far *)buffer2seg)+1,(unsigned *)*dest,size,
 		((mapfiletype _seg *)tinf)->RLEWtag);
+#endif
 		MM_FreePtr (&buffer2seg);
 
 #else
