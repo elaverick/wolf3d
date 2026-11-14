@@ -356,6 +356,9 @@ void VL_DrawLatch8String(
 
         (void)wolf_legacy_video_latch_to_screen(
             video, glyph_offset, x, y, 2, 8);
+        if (x > INT_MAX - 8) {
+            break;
+        }
         x += 8;
         ++text;
     }
