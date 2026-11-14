@@ -336,6 +336,24 @@ void VL_LatchToScreen(
         get_video(), source, x, y, width_bytes, height);
 }
 
+void VL_ScreenToScreen(
+    unsigned source,
+    unsigned destination,
+    int width_bytes,
+    int height)
+{
+    WolfLegacyVideo *video = get_video();
+
+    if (video != NULL) {
+        (void)wolf_vga_memory_copy_page(
+            &video->memory,
+            (size_t)source,
+            (size_t)destination,
+            width_bytes,
+            height);
+    }
+}
+
 void VL_MemToScreen(
     uint8_t *source, int width, int height, int x, int y)
 {
