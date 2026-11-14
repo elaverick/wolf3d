@@ -181,6 +181,7 @@ if(BUILD_TESTING)
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/WOLFSRC
             ${CMAKE_CURRENT_SOURCE_DIR}/src/video
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/platform
     )
 
     target_compile_definitions(test_native_raycaster PRIVATE WOLF3D_NATIVE)
