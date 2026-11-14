@@ -30,7 +30,7 @@ static void write_u16_le(uint8_t *bytes, uint16_t value)
 /*
  * Real t_compshape layout:
  *   leftpix, rightpix, then 64 offsets in centre-out order.
- * For leftpix=30/rightpix=34 the slot sequence is x=31,30,32,33,34.
+ * For leftpix=30/rightpix=34 the slot sequence is x=30,31,32,33,34.
  * Pixel data occupies [132, 167); each offset points at a post command list.
  */
 static size_t make_test_shape(uint8_t *shape, size_t capacity)
@@ -130,13 +130,13 @@ static void test_centre_out_offsets_and_multiple_posts(void)
     present_video();
 
     /* x=30 maps to x=158; x=31 to 159; right half begins at x=160. */
-    assert(framebuffer_pixels[69u * 320u + 158u] == 21);
+    assert(framebuffer_pixels[69u * 320u + 158u] == 11);
     assert(framebuffer_pixels[70u * 320u + 158u] == 22);
-    assert(framebuffer_pixels[71u * 320u + 158u] == 23);
+    assert(framebuffer_pixels[71u * 320u + 158u] == 33);
 
-    assert(framebuffer_pixels[69u * 320u + 159u] == 11);
-    assert(framebuffer_pixels[70u * 320u + 159u] == 22);
-    assert(framebuffer_pixels[71u * 320u + 159u] == 33);
+    assert(framebuffer_pixels[69u * 320u + 159u] == 20);
+    assert(framebuffer_pixels[70u * 320u + 159u] == 21);
+    assert(framebuffer_pixels[71u * 320u + 159u] == 22);
 
     assert(framebuffer_pixels[69u * 320u + 160u] == 31);
     assert(framebuffer_pixels[70u * 320u + 160u] == 32);

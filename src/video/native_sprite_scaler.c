@@ -14,14 +14,11 @@ static uint16_t read_u16_le(const uint8_t *bytes)
 static unsigned column_slot(unsigned source_x, unsigned left_pixel)
 {
     /*
-     * t_compshape::dataofs is not stored in left-to-right order.
-     * The original ScaleShape walks x=31..leftpix, then x=32..rightpix.
-     * The same slot mapping lets this implementation draw left-to-right
-     * without changing the on-disk sprite representation.
+     * Both halves of the original ScaleShape walk address the same table
+     * order: dataofs[source_x - leftpix]. The left half decrements its
+     * pointer while source x decrements; the right half starts at
+     * dataofs[32 - leftpix] and increments it with source x.
      */
-    if (source_x <= 31u) {
-        return 31u - source_x;
-    }
     return source_x - left_pixel;
 }
 
