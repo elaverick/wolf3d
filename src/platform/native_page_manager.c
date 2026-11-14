@@ -26,6 +26,7 @@ char PageFileName[13] = "VSWAP.";
 static int page_file = -1;
 static boolean page_manager_started;
 static longword page_frame;
+static int main_memory_purge_level;
 static byte **page_addresses;
 
 extern char extension[5];
@@ -166,6 +167,44 @@ static boolean read_page_header(void)
     return true;
 }
 
+static boolean purge_one_unlocked_page(void)
+{
+    unsigned index;
+    unsigned oldest_index = ChunksInFile;
+    longword oldest_hit = UINT32_MAX;
+
+    if (main_memory_purge_level <= 0 ||
+        page_addresses == NULL || PMPages == NULL) {
+        return false;
+    }
+
+    for (index = 0; index < ChunksInFile; ++index) {
+        if (page_addresses[index] != NULL &&
+            PMPages[index].locked == pml_Unlocked &&
+            PMPages[index].lastHit <= oldest_hit) {
+            oldest_hit = PMPages[index].lastHit;
+            oldest_index = index;
+        }
+    }
+
+    if (oldest_index >= ChunksInFile) {
+        return false;
+    }
+
+    free(page_addresses[oldest_index]);
+    page_addresses[oldest_index] = NULL;
+    PMPages[oldest_index].mainPage = -1;
+    PMPages[oldest_index].lastHit = 0;
+    return true;
+}
+
+void PM_Purge(void)
+{
+    while (purge_one_unlocked_page()) {
+        /* Release every unlocked page; allocation pressure uses one at a time. */
+    }
+}
+
 void PM_Startup(void)
 {
     char filename[64];
@@ -204,6 +243,7 @@ void PM_Startup(void)
     XMSPagesAvail = 0;
     EMSPagesAvail = 0;
     page_frame = 0;
+    main_memory_purge_level = 0;
     page_manager_started = true;
 }
 
@@ -234,6 +274,7 @@ void PM_Shutdown(void)
     PMSoundStart = 0;
     page_manager_started = false;
     page_frame = 0;
+    main_memory_purge_level = 0;
 }
 
 void PM_Reset(void)
@@ -266,7 +307,13 @@ void PM_SetPageLock(int pagenum, PMLockType lock)
 
 void PM_SetMainMemPurge(int level)
 {
-    (void)level;
+    main_memory_purge_level = level < 0 ? 0 : level;
+}
+
+/* Retain the original header/API spelling as a compatibility alias. */
+void PM_SetMainPurge(int level)
+{
+    PM_SetMainMemPurge(level);
 }
 
 void PM_CheckMainMem(void)
@@ -322,6 +369,9 @@ memptr PM_GetPage(int pagenum)
     }
 
     data = (byte *)malloc(page->length);
+    while (data == NULL && purge_one_unlocked_page()) {
+        data = (byte *)malloc(page->length);
+    }
     if (data == NULL) {
         Quit("Native page manager: page allocation failed");
         return NULL;
