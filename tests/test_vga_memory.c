@@ -80,6 +80,61 @@ static void test_planar_pages_and_primitives(void)
         &memory, PAGE_OFFSET, 0, 0, 4, 2, planar, sizeof(planar) - 1));
 }
 
+static void test_scaler_matches_original_fixed_point(void)
+{
+    static uint8_t scale_storage[
+        128 * WOLF_VGA_PLANE_COUNT];
+    static uint8_t scale_pixels[16 * 32];
+    uint8_t source[64];
+    uint8_t expected[24];
+    WolfVgaMemory memory;
+    WolfFramebuffer output;
+    int destination_height;
+    int source_y;
+    int y;
+
+    for (source_y = 0; source_y < 64; ++source_y) {
+        source[source_y] = (uint8_t)(source_y + 1);
+    }
+
+    assert(wolf_vga_memory_init(
+        &memory, scale_storage, sizeof(scale_storage), 128, 4, 32));
+    assert(wolf_framebuffer_init(
+        &output, 16, 32, 16, scale_pixels, sizeof(scale_pixels)));
+
+    for (destination_height = 2;
+         destination_height <= 24;
+         destination_height += 2) {
+        uint64_t step = ((uint64_t)destination_height << 16) / 64;
+        uint64_t fraction = 0;
+        int top = (24 - destination_height) / 2;
+
+        memset(expected, 0, sizeof(expected));
+        wolf_vga_memory_clear(&memory, 0);
+
+        assert(wolf_vga_memory_scale_post(
+            &memory, 0, 4, 0, 24, 1,
+            source, sizeof(source), 64, destination_height));
+        assert(wolf_vga_memory_present(&memory, 0, &output));
+
+        for (source_y = 0; source_y < 64; ++source_y) {
+            int start = (int)(fraction >> 16);
+            int end;
+
+            fraction += step;
+            end = (int)(fraction >> 16);
+
+            for (y = start; y < end && y < 24; ++y) {
+                expected[top + y] = source[source_y];
+            }
+        }
+
+        for (y = 0; y < 24; ++y) {
+            assert(scale_pixels[(size_t)y * 16 + 4] == expected[y]);
+        }
+    }
+}
+
 static void test_original_vga_layout(void)
 {
     static uint8_t legacy_storage[
@@ -193,6 +248,7 @@ int main(void)
     test_latch_memory();
     test_wall_post_scaling();
     test_original_vga_layout();
+    test_scaler_matches_original_fixed_point();
 
     puts("software VGA memory tests passed");
     return 0;
