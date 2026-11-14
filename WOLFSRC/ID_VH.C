@@ -619,7 +619,8 @@ boolean FizzleFade (unsigned source, unsigned dest,
 
 	IN_StartAck ();
 
-	TimeCount=frame=0;
+	WOLF_SET_TIMECNT(0);
+	frame=0;
 	do	// while (1)
 	{
 		if (abortable && IN_CheckAck () )
