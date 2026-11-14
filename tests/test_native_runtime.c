@@ -128,7 +128,19 @@ int main(void)
     PM_Preload(progress);
     assert(progress_seen);
     assert(PM_GetPage(0) != NULL);
+    assert(PM_GetPage(1) == page);
     assert(PM_GetPage(2) != NULL);
+
+    /*
+     * The main-memory purge setting enables LRU eviction for unlocked VSWAP
+     * pages, but an explicitly locked page must remain resident.
+     */
+    PM_SetMainMemPurge(3);
+    PM_Purge();
+    assert(PM_GetPageAddress(0) == NULL);
+    assert(PM_GetPageAddress(1) == NULL);
+    assert(PM_GetPageAddress(2) != NULL);
+    assert(PM_GetPage(1) != NULL); /* A purged page reloads transparently. */
 
     PM_Shutdown();
     MM_Shutdown();
