@@ -30,7 +30,7 @@ static FILE *open_test_file(const char *filename)
     }
     return file;
 #else
-    return open_test_file(filename);
+    return fopen(filename, "wb");
 #endif
 }
 
