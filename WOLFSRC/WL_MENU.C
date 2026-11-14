@@ -731,7 +731,7 @@ int CP_CheckQuick(unsigned scancode)
 
 				if (loadedgame)
 					playstate = ex_abort;
-				lasttimecount = TimeCount;
+				lasttimecount = WOLF_GET_TIMECNT();
 
 				if (MousePresent)
 					Mouse(MDelta);	// Clear accumulated mouse movement
@@ -805,7 +805,7 @@ int CP_CheckQuick(unsigned scancode)
 				if (loadedgame)
 					playstate = ex_abort;
 
-				lasttimecount = TimeCount;
+				lasttimecount = WOLF_GET_TIMECNT();
 
 				if (MousePresent)
 					Mouse(MDelta);	// Clear accumulated mouse movement
@@ -2218,7 +2218,7 @@ void EnterCtrlData(int index,CustomCtrls *cust,void (*DrawRtn)(int),void (*Print
 	//
 	// FLASH CURSOR
 	//
-	if (TimeCount>10)
+	if (WOLF_GET_TIMECNT()>10)
 	{
 	 switch(tick)
 	 {
@@ -3159,7 +3159,7 @@ int HandleMenu(CP_iteminfo *item_i,CP_itemtype far *items,void (*routine)(int w)
 		//
 		// CHANGE GUN SHAPE
 		//
-		if (TimeCount>timer)
+		if (WOLF_GET_TIMECNT()>timer)
 		{
 			WOLF_SET_TIMECNT(0);
 			if (shape==C_CURSOR1PIC)
@@ -3386,7 +3386,7 @@ void DrawHalfStep(int x,int y)
 	VW_UpdateScreen();
 	SD_PlaySound(MOVEGUN1SND);
 	WOLF_SET_TIMECNT(0);
-	while(TimeCount<8);
+	while(WOLF_GET_TIMECNT()<8);
 }
 
 
@@ -3427,7 +3427,7 @@ void TicDelay(int count)
 	do
 	{
 		ReadAnyControl(&ci);
-	} while(TimeCount<count && ci.dir!=dir_None);
+	} while(WOLF_GET_TIMECNT()<count && ci.dir!=dir_None);
 }
 
 
@@ -3622,7 +3622,7 @@ int Confirm(char far *string)
 
 	do
 	{
-		if (TimeCount>=10)
+		if (WOLF_GET_TIMECNT()>=10)
 		{
 			switch(tick)
 			{
