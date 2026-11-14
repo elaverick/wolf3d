@@ -153,6 +153,7 @@ if(BUILD_TESTING)
     add_executable(test_native_input
         tests/test_native_input.c
         src/platform/native_input.c
+        src/video/native_raycaster.c
     )
 
     target_include_directories(test_native_input
@@ -178,6 +179,7 @@ if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
         WOLFSRC/WL_ACT1.C
         WOLFSRC/WL_ACT2.C
         WOLFSRC/WL_AGENT.C
+        WOLFSRC/WL_DRAW.C
         WOLFSRC/WL_GAME.C
         WOLFSRC/WL_INTER.C
         WOLFSRC/WL_MENU.C
