@@ -198,11 +198,15 @@ extern	SMMode		MusicMode;
 extern	boolean		DigiPlaying;
 extern	int			DigiMap[];
 #ifdef WOLF3D_NATIVE
-#include <stdatomic.h>
-extern _Atomic longword TimeCount;
+#include "native_tick.h"
+extern WolfNativeTick WolfNativeTimeCount;
+#define TimeCount wolf_native_tick_load(&WolfNativeTimeCount)
+#define WOLF_SET_TIMECNT(value) \
+    wolf_native_tick_store(&WolfNativeTimeCount, (uint32_t)(value))
 extern void SD_TimerTick(void);
 #else
 extern longword TimeCount;
+#define WOLF_SET_TIMECNT(value) (TimeCount = (longword)(value))
 #endif
 
 // Function prototypes
