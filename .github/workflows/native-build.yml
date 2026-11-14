@@ -58,16 +58,38 @@ jobs:
         if: runner.os == 'Windows'
         run: ctest --test-dir build-sdl -C Release -R platform_smoke --output-on-failure
 
-      - name: Verify native game startup without game data
+      - name: Verify native launcher and missing-data startup
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          # The launcher intentionally exercises exit codes 1 and 2.
+          $PSNativeCommandUseErrorActionPreference = $false
           $env:SDL_VIDEODRIVER = 'dummy'
-          $output = & '.\build-sdl\Release\wolf3d_native.exe' 2>&1
+          $exe = '.\build-sdl\Release\wolf3d_native.exe'
+
+          $helpOutput = & $exe --help 2>&1
+          $helpExitCode = $LASTEXITCODE
+          $helpMessage = $helpOutput -join "`n"
+          if ($helpExitCode -ne 0 -or $helpMessage -notmatch 'Usage:') {
+            throw "Native launcher help failed (exit $helpExitCode): $helpMessage"
+          }
+
+          $missingDirectory = Join-Path $env:RUNNER_TEMP 'wolf3d-missing-data'
+          $badDirectoryOutput = & $exe --data-dir $missingDirectory 2>&1
+          $badDirectoryExitCode = $LASTEXITCODE
+          $badDirectoryMessage = $badDirectoryOutput -join "`n"
+          if ($badDirectoryExitCode -ne 2 -or $badDirectoryMessage -notmatch 'Unable to use game data directory') {
+            throw "Invalid data-directory handling failed (exit $badDirectoryExitCode): $badDirectoryMessage"
+          }
+
+          $output = & $exe 2>&1
           $exitCode = $LASTEXITCODE
           $message = $output -join "`n"
-          if ($exitCode -ne 1) { throw "Expected missing-data exit code 1, received $exitCode. Output: $message" }
-          if ($message -notmatch 'NO WOLFENSTEIN 3-D DATA FILES') { throw "Game did not reach the expected resource check. Output: $message" }
+          Write-Host "No-data startup exit code: $exitCode"
+          Write-Host $message
+          if ($exitCode -ne 1 -or $message -notmatch 'NO WOLFENSTEIN 3-D DATA FILES') {
+            throw "Game did not reach its expected missing-data check (exit $exitCode): $message"
+          }
 
       - name: Configure original gameplay C sources
         run: >-
@@ -78,7 +100,6 @@ jobs:
 
       - name: Compile original gameplay as C
         run: cmake --build build-game --target wolf3d_game_objects --config Release --parallel
-
 
       - name: Configure sanitised build
         if: runner.os == 'Linux'
