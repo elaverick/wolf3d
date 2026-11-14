@@ -711,7 +711,7 @@ typedef enum	{
 } weapontype;
 
 
-typedef enum	{
+enum {
 	gd_baby,
 	gd_easy,
 	gd_medium,

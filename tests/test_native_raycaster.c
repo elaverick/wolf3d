@@ -28,7 +28,7 @@ fixed ystep;
 
 byte tilemap[MAPSIZE][MAPSIZE];
 byte spotvis[MAPSIZE][MAPSIZE];
-unsigned doorposition[256];
+unsigned doorposition[MAXDOORS];
 unsigned pwallpos;
 int pixelangle[MAXVIEWWIDTH];
 fixed finetangent[FINEANGLES / 4];
