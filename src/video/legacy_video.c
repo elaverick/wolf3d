@@ -48,6 +48,9 @@ bool wolf_legacy_video_init(
         return false;
     }
 
+    wolf_vga_memory_clear(&video->memory, 0);
+    wolf_framebuffer_clear(&video->framebuffer, 0);
+
     video->draw_page_offset = WOLF_VGA_LEGACY_PAGE1_OFFSET;
     video->display_page_offset = WOLF_VGA_LEGACY_PAGE1_OFFSET;
     video->delay_callback = NULL;
