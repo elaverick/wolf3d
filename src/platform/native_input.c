@@ -37,7 +37,7 @@ word DemoOffset;
 word DemoSize;
 
 static boolean input_started;
-static void (*key_hook)(void);
+static void (*key_hook)();
 static boolean ack_button_state[8];
 
 static const Direction direction_table[9] = {
@@ -165,7 +165,7 @@ void IN_Default(boolean gotit, ControlType in)
     IN_SetControlType(0, in);
 }
 
-void IN_SetKeyHook(void (*hook)(void))
+void IN_SetKeyHook(void (*hook)())
 {
     key_hook = hook;
 }
