@@ -40,9 +40,6 @@ bool wolf_platform_present_indexed(
     int pitch,
     const uint8_t palette[256][3]);
 
-/* Return true when at least one file matches a simple wildcard pattern. */
-bool wolf_platform_any_file_matches(const char *pattern);
-
 /* Monotonic time in milliseconds. */
 uint64_t wolf_platform_time_ms(void);
 
