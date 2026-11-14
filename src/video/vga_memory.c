@@ -446,7 +446,8 @@ bool wolf_vga_memory_scale_post(
     if (!vga_memory_is_valid(memory) || source == NULL ||
         view_height <= 0 || post_width <= 0 ||
         source_height <= 0 || destination_height <= 0 ||
-        source_size < (size_t)source_height) {
+        source_size < (size_t)source_height ||
+        page_offset >= memory->plane_size) {
         return false;
     }
 
