@@ -107,7 +107,11 @@ typedef	byte		ScanCode;
 #define	MDelta		11
 
 #define	MouseInt	0x33
+#ifdef WOLF3D_NATIVE
+#define Mouse(x) wolf_native_mouse_interrupt(x)
+#else
 #define	Mouse(x)	_AX = x,geninterrupt(MouseInt)
+#endif
 
 typedef	enum		{
 						demo_Off,demo_Record,demo_Playback,demo_PlayDone
