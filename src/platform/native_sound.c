@@ -220,7 +220,7 @@ boolean SD_PlaySound(soundnames sound)
         current_sound = sound;
         current_priority = priority;
     }
-    return false;
+    return submitted;
 }
 
 void SD_SetPosition(int leftvol, int rightvol)
