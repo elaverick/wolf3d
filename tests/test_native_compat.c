@@ -21,6 +21,19 @@ void wolf_platform_mouse_command(
     if (dx != NULL) *dx = 0xdef0;
 }
 
+static FILE *open_test_file(const char *filename)
+{
+#ifdef _WIN32
+    FILE *file = NULL;
+    if (fopen_s(&file, filename, "wb") != 0) {
+        return NULL;
+    }
+    return file;
+#else
+    return open_test_file(filename);
+#endif
+}
+
 static void test_integer_conversion(void)
 {
     char buffer[64];
@@ -35,7 +48,7 @@ static void test_file_search(void)
 {
     const char *filename = "native-compat-test.tmp";
     struct ffblk entry;
-    FILE *file = fopen(filename, "wb");
+    FILE *file = open_test_file(filename);
 
     assert(file != NULL);
     fputs("test", file);
@@ -61,12 +74,12 @@ static void test_file_search_iteration(void)
     FILE *file;
     int count = 0;
 
-    file = fopen(first, "wb");
+    file = open_test_file(first);
     assert(file != NULL);
     fputs("one", file);
     assert(fclose(file) == 0);
 
-    file = fopen(second, "wb");
+    file = open_test_file(second);
     assert(file != NULL);
     fputs("two", file);
     assert(fclose(file) == 0);
