@@ -11,6 +11,11 @@
 
 #include <stdint.h>
 
+#define DEG90 900
+#define DEG180 1800
+#define DEG270 2700
+#define DEG360 FINEANGLES
+
 extern int midangle;
 extern int focaltx;
 extern int focalty;
