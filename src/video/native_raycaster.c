@@ -89,46 +89,48 @@ static bool crossing_is_horizontal(int x_coordinate)
     return x_coordinate < xtile;
 }
 
-static void trace_vertical_tile(void)
+static bool trace_vertical_tile(void)
 {
     int y_coordinate = fixed_tile(yintercept);
 
     if (!tile_coordinates_valid(xtile, y_coordinate)) {
         tilehit = 0;
-        return;
+        return false;
     }
 
     tilehit = tilemap[xtile][y_coordinate];
     if (tilehit != 0) {
         ytile = y_coordinate;
         xintercept = (fixed)((int64_t)xtile * TILEGLOBAL);
-        return;
+        return true;
     }
 
     spotvis[xtile][y_coordinate] = 1;
     xtile += xtilestep;
     yintercept += ystep;
+    return true;
 }
 
-static void trace_horizontal_tile(void)
+static bool trace_horizontal_tile(void)
 {
     int x_coordinate = fixed_tile(xintercept);
 
     if (!tile_coordinates_valid(x_coordinate, ytile)) {
         tilehit = 0;
-        return;
+        return false;
     }
 
     tilehit = tilemap[x_coordinate][ytile];
     if (tilehit != 0) {
         xtile = x_coordinate;
         yintercept = (fixed)((int64_t)ytile * TILEGLOBAL);
-        return;
+        return true;
     }
 
     spotvis[x_coordinate][ytile] = 1;
     ytile += ytilestep;
     xintercept += xstep;
+    return true;
 }
 
 static bool process_vertical_special(void)
@@ -146,7 +148,8 @@ static bool process_vertical_special(void)
         door_number = tilehit & 0x7fu;
         if (fixed_tile(midpoint) != fixed_tile(yintercept) ||
             (unsigned)(midpoint & 0xffff) < doorposition[door_number]) {
-            xtile -= xtilestep;
+            xtile += xtilestep;
+            yintercept += ystep;
             return false;
         }
 
@@ -165,7 +168,8 @@ static bool process_vertical_special(void)
     }
 
     if (fixed_tile(midpoint) != fixed_tile(yintercept)) {
-        xtile -= xtilestep;
+        xtile += xtilestep;
+        yintercept += ystep;
         return false;
     }
 
@@ -189,7 +193,8 @@ static bool process_horizontal_special(void)
 
         if (fixed_tile(midpoint) != fixed_tile(xintercept) ||
             (unsigned)(midpoint & 0xffff) < doorposition[door_number]) {
-            ytile -= ytilestep;
+            ytile += ytilestep;
+            xintercept += xstep;
             return false;
         }
 
@@ -202,13 +207,14 @@ static bool process_horizontal_special(void)
 
     {
         fixed partial_step = (fixed)(
-            multiply_fixed_by_fraction(xstep, pwallpos) / 64);
+            ((int64_t)xstep * (int64_t)pwallpos) / 64);
 
         midpoint = xintercept + partial_step;
     }
 
     if (fixed_tile(midpoint) != fixed_tile(xintercept)) {
-        ytile -= ytilestep;
+        ytile += ytilestep;
+        xintercept += xstep;
         return false;
     }
 
@@ -272,13 +278,11 @@ void AsmRefresh(void)
             int x_coordinate = fixed_tile(xintercept);
 
             if (crossing_is_vertical(y_coordinate)) {
-                trace_vertical_tile();
+                if (!trace_vertical_tile()) {
+                    break;
+                }
 
                 if (tilehit == 0) {
-                    if (!tile_coordinates_valid(xtile - xtilestep,
-                            fixed_tile(yintercept - ystep))) {
-                        break;
-                    }
                     continue;
                 }
 
@@ -293,14 +297,11 @@ void AsmRefresh(void)
             }
 
             if (crossing_is_horizontal(x_coordinate)) {
-                trace_horizontal_tile();
+                if (!trace_horizontal_tile()) {
+                    break;
+                }
 
                 if (tilehit == 0) {
-                    if (!tile_coordinates_valid(
-                            fixed_tile(xintercept - xstep),
-                            ytile - ytilestep)) {
-                        break;
-                    }
                     continue;
                 }
 
