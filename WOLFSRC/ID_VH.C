@@ -675,7 +675,7 @@ noxor:
 				return false;
 		}
 		frame++;
-		while (TimeCount<frame)		// don't go too fast
+		while (WOLF_GET_TIMECNT()<frame)		// don't go too fast
 		;
 	} while (1);
 
