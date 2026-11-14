@@ -184,7 +184,7 @@ static void test_copy_clipping(void)
     assert(copy_pixels[1] == 12);
     assert(copy_pixels[PITCH] == 21);
     assert(copy_pixels[2 * PITCH + 2] == 33);
-    assert(copy_pixels[2 * PITCH + 3] == 0xee);
+    assert(copy_pixels[2 * PITCH + 4] == 0xee);
 
     wolf_framebuffer_copy(&destination, 6, 4, &source, 6, 4, 5, 5);
     assert(copy_pixels[4 * PITCH + 6] == 46);
