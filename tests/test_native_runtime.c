@@ -10,6 +10,20 @@
 
 char extension[5] = "TST";
 
+void wolf_platform_mouse_command(
+    int function,
+    int *ax,
+    int *bx,
+    int *cx,
+    int *dx)
+{
+    (void)function;
+    if (ax != NULL) *ax = 0;
+    if (bx != NULL) *bx = 0;
+    if (cx != NULL) *cx = 0;
+    if (dx != NULL) *dx = 0;
+}
+
 void Quit(char *error)
 {
     fprintf(stderr, "%s\n", error);
