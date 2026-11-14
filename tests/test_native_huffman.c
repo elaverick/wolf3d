@@ -76,7 +76,7 @@ static void test_rejects_short_or_invalid_streams(void)
         table, WOLF_NATIVE_HUFFMAN_NODE_COUNT - 1u));
 
     assert(!wolf_native_huffman_expand(
-        NULL, 0, two_bytes, 1,
+        NULL, 0, output, 1,
         table, WOLF_NATIVE_HUFFMAN_NODE_COUNT));
 }
 
