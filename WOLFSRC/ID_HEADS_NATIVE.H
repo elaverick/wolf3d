@@ -86,7 +86,7 @@ static inline char *wolf3d_unsigned_to_base(
         buffer[output++] = reversed[--length];
     }
 
-    buffer[output] = '\\0';
+    buffer[output] = '\0';
     return buffer;
 }
 
@@ -130,7 +130,7 @@ static inline char *wolf3d_ultoa(unsigned long value, char *buffer, int radix)
 
 struct ffblk { int unused; };
 #define FA_ARCH 0x20
-#define findfirst(pattern, result, attributes) \\
+#define findfirst(pattern, result, attributes) \
     (wolf_platform_any_file_matches(pattern) ? 0 : -1)
 
 extern int wolf_native_ax;
