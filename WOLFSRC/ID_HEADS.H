@@ -1,5 +1,8 @@
 // ID_GLOB.H
 
+#ifdef WOLF3D_NATIVE
+#include "ID_HEADS_NATIVE.H"
+#else
 
 #include <ALLOC.H>
 #include <CTYPE.H>
@@ -121,3 +124,5 @@ extern	byte		fontcolor,backcolor;
 
 #define SETFONTCOLOR(f,b) fontcolor=f;backcolor=b;
 
+
+#endif /* WOLF3D_NATIVE */
