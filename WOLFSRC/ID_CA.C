@@ -1119,6 +1119,111 @@ void CAL_SetupGrFile (void)
 
 void CAL_SetupMapFile (void)
 {
+#ifdef WOLF3D_NATIVE
+    int header_handle;
+    int map_index;
+    long header_length;
+    long map_file_size;
+    long header_required;
+    int32_t header_offset;
+    uint64_t header_end;
+    char fname[13];
+
+    maphandle = -1;
+    strcpy(fname, mheadname);
+    strcat(fname, extension);
+    header_handle = open(fname, O_RDONLY | O_BINARY, S_IREAD);
+    if (header_handle < 0) {
+        CA_CannotOpen(fname);
+        return;
+    }
+
+    header_length = filelength(header_handle);
+    header_required = (long)(sizeof(word) + 100u * sizeof(int32_t));
+    if (header_length < header_required) {
+        close(header_handle);
+        Quit("CAL_SetupMapFile: truncated MAPHEAD file");
+        return;
+    }
+
+    MM_GetPtr((memptr *)&tinf, (unsigned long)header_length);
+    if (tinf == NULL ||
+        !CA_FarRead(header_handle, tinf, header_length)) {
+        if (tinf != NULL) MM_FreePtr((memptr *)&tinf);
+        tinf = NULL;
+        close(header_handle);
+        Quit("CAL_SetupMapFile: unable to read MAPHEAD file");
+        return;
+    }
+    close(header_handle);
+
+#ifdef CARMACIZED
+    strcpy(fname, "GAMEMAPS.");
+#else
+    strcpy(fname, mfilename);
+#endif
+    strcat(fname, extension);
+    maphandle = open(fname, O_RDONLY | O_BINARY, S_IREAD);
+    if (maphandle < 0) {
+        CA_CannotOpen(fname);
+        return;
+    }
+
+    map_file_size = filelength(maphandle);
+    if (map_file_size < 0) {
+        close(maphandle);
+        maphandle = -1;
+        Quit("CAL_SetupMapFile: unable to determine map file size");
+        return;
+    }
+
+    for (map_index = 0; map_index < NUMMAPS; ++map_index) {
+        header_offset =
+            ((mapfiletype _seg *)tinf)->headeroffsets[map_index];
+
+        /* -1 is the format's sparse-map sentinel. Other negatives are invalid. */
+        if (header_offset == -1) {
+            continue;
+        }
+        if (header_offset < 0) {
+            Quit("CAL_SetupMapFile: invalid negative map-header offset");
+            return;
+        }
+
+        header_end = (uint64_t)(uint32_t)header_offset + sizeof(maptype);
+        if (header_end > (uint64_t)map_file_size ||
+            lseek(maphandle, (long)header_offset, SEEK_SET) != (long)header_offset) {
+            Quit("CAL_SetupMapFile: map header lies outside GAMEMAPS file");
+            return;
+        }
+
+        MM_GetPtr((memptr *)&mapheaderseg[map_index], sizeof(maptype));
+        if (mapheaderseg[map_index] == NULL ||
+            !CA_FarRead(
+                maphandle,
+                (byte far *)mapheaderseg[map_index],
+                (long)sizeof(maptype))) {
+            if (mapheaderseg[map_index] != NULL) {
+                MM_FreePtr((memptr *)&mapheaderseg[map_index]);
+            }
+            Quit("CAL_SetupMapFile: unable to read map header");
+            return;
+        }
+        MM_SetLock((memptr *)&mapheaderseg[map_index], true);
+    }
+
+    for (map_index = 0; map_index < MAPPLANES; ++map_index) {
+        MM_GetPtr(
+            (memptr *)&mapsegs[map_index],
+            64u * 64u * (unsigned long)sizeof(unsigned));
+        if (mapsegs[map_index] == NULL) {
+            Quit("CAL_SetupMapFile: unable to allocate map plane");
+            return;
+        }
+        MM_SetLock((memptr *)&mapsegs[map_index], true);
+    }
+#else
+
 	int	i;
 	int handle;
 	long length,pos;
@@ -1191,6 +1296,8 @@ void CAL_SetupMapFile (void)
 #endif
 		MM_SetLock ((memptr *)&mapsegs[i],true);
 	}
+
+#endif
 }
 
 
