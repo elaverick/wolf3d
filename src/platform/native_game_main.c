@@ -19,7 +19,41 @@ void WolfMain(void);
 static bool present_frame(const uint8_t *pixels, int pitch,
     const uint8_t palette[256][3], void *userdata)
 {
-    return wolf_platform_present_indexed((WolfPlatform *)userdata, pixels, pitch, palette);
+    /*
+     * The original engine advances its simulation clock once per rendered
+     * frame. Keep that clock at 70 Hz instead of letting fast PCs run the
+     * simulation at an arbitrary uncapped frame rate.
+     *
+     * Express deadlines in 1/70 ms units so fractional frame durations are
+     * carried forward rather than rounded to a fixed 14 or 15 ms delay.
+     */
+    static uint64_t next_frame_deadline;
+    uint64_t now = wolf_platform_time_ms() * 70u;
+    bool presented;
+
+    presented = wolf_platform_present_indexed(
+        (WolfPlatform *)userdata, pixels, pitch, palette);
+    if (!presented) {
+        return false;
+    }
+
+    if (next_frame_deadline == 0) {
+        next_frame_deadline = now;
+    }
+    next_frame_deadline += 1000u;
+
+    if (next_frame_deadline > now) {
+        uint64_t remaining = next_frame_deadline - now;
+        uint64_t delay_ms = (remaining + 69u) / 70u;
+        if (delay_ms > 0 && delay_ms <= UINT32_MAX) {
+            wolf_platform_delay_ms((uint32_t)delay_ms);
+        }
+    } else if (now - next_frame_deadline > 4000u) {
+        /* Avoid long catch-up delays after a debugger break or window drag. */
+        next_frame_deadline = now;
+    }
+
+    return true;
 }
 
 static void delay_frame(uint32_t milliseconds, void *userdata)
