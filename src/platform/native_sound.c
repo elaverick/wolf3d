@@ -29,8 +29,8 @@ SDSMode DigiMode = sds_Off;
 SMMode MusicMode = smm_Off;
 boolean DigiPlaying = false;
 int DigiMap[256];
-_Atomic longword TimeCount;
-static _Atomic boolean game_clock_enabled;
+WolfNativeTick WolfNativeTimeCount;
+static WolfNativeTick game_clock_enabled;
 
 static void (*sound_user_hook)(void);
 static soundnames current_sound;
@@ -134,8 +134,8 @@ void SD_Startup(void)
     DigiMode = sds_Off;
     MusicMode = smm_Off;
     DigiPlaying = false;
-    TimeCount = 0;
-    game_clock_enabled = true;
+    WOLF_SET_TIMECNT(0);
+    wolf_native_tick_store(&game_clock_enabled, 1u);
     current_sound = (soundnames)-1;
     current_priority = 0;
     sound_user_hook = NULL;
@@ -143,7 +143,7 @@ void SD_Startup(void)
 
 void SD_Shutdown(void)
 {
-    game_clock_enabled = false;
+    wolf_native_tick_store(&game_clock_enabled, 0u);
     wolf_platform_audio_clear();
     DigiPlaying = false;
     SoundMode = sdm_Off;
@@ -329,8 +329,8 @@ void SD_StopDigitized(void)
 
 void SD_TimerTick(void)
 {
-    if (game_clock_enabled) {
-        ++TimeCount;
+    if (wolf_native_tick_load(&game_clock_enabled) != 0) {
+        (void)wolf_native_tick_increment(&WolfNativeTimeCount);
     }
 }
 
