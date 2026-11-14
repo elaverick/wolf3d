@@ -287,7 +287,8 @@ void VL_Bar(int x, int y, int width, int height, int colour)
 
 void VL_MungePic(uint8_t *source, unsigned width, unsigned height)
 {
-    if (width <= INT_MAX && height <= INT_MAX) {
+    if (width > 0 && height > 0 &&
+        width <= INT_MAX && height <= INT_MAX) {
         if ((size_t)width <= SIZE_MAX / (size_t)height) {
             (void)wolf_legacy_video_munge_picture(
                 source, (size_t)width * (size_t)height,
