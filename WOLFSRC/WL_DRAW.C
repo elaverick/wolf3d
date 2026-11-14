@@ -55,7 +55,7 @@ fixed	mindist		= MINDIST;
 // math tables
 //
 int			pixelangle[MAXVIEWWIDTH];
-long		far finetangent[FINEANGLES/4];
+fixed		far finetangent[FINEANGLES/4];
 fixed 		far sintable[ANGLES+ANGLES/4],far *costable = sintable+(ANGLES/4);
 
 //
@@ -1106,6 +1106,8 @@ unsigned vgaCeiling[]=
 
 void VGAClearScreen (void)
 {
+	unsigned ceiling = vgaCeiling[gamestate.episode * 10 + mapon];
+
 #ifdef WOLF3D_NATIVE
 	int view_left = 0;
 	unsigned ceiling_index;
