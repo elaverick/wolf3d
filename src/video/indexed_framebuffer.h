@@ -57,6 +57,13 @@ void wolf_palette_expand_vga6(
     const uint8_t source[256][3],
     uint8_t destination[256][3]);
 
+/* Convert an in-place chunky image to the four-plane layout used by VGA. */
+bool wolf_image_chunky_to_planar4(
+    uint8_t *image,
+    size_t image_size,
+    int width,
+    int height);
+
 /*
  * Draw an image stored in the original Wolfenstein planar format.
  *
