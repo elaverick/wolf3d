@@ -120,6 +120,7 @@ void VL_SetVGAPlaneMode(void)
 
     if (video != NULL) {
         wolf_legacy_video_clear(video, 0);
+        VL_SetLineWidth(WOLF_VGA_LEGACY_STRIDE_BYTES / 2u);
     }
 }
 
