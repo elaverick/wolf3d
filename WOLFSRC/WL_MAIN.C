@@ -58,7 +58,7 @@ int             viewheight;
 int             centerx;
 int             shootdelta;                     // pixels away from centerx a target can be
 fixed           scale,maxslope;
-long            heightnumerator;
+fixed           heightnumerator;
 int                     minheightdiv;
 
 
