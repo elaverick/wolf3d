@@ -79,6 +79,12 @@ bool wolf_legacy_video_mem_to_latch(
     int height,
     const uint8_t *planar_image,
     size_t image_size);
+bool wolf_legacy_video_screen_to_screen(
+    WolfLegacyVideo *video,
+    size_t source_offset,
+    size_t destination_offset,
+    int width_bytes,
+    int height);
 bool wolf_legacy_video_latch_to_screen(
     WolfLegacyVideo *video,
     size_t latch_offset,
