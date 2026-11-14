@@ -155,21 +155,21 @@ static void test_game_clock_uses_external_timer_ticks(void)
     SD_Shutdown();
     WOLF_SET_TIMECNT(0);
     SD_TimerTick();
-    assert(TimeCount == 0);
+    assert(WOLF_GET_TIMECNT() == 0);
 
     SD_Startup();
-    assert(TimeCount == 0);
+    assert(WOLF_GET_TIMECNT() == 0);
     for (index = 0; index < 70; ++index) {
         SD_TimerTick();
     }
-    assert(TimeCount == 70);
+    assert(WOLF_GET_TIMECNT() == 70);
 
     SD_Poll();
-    assert(TimeCount == 70);
+    assert(WOLF_GET_TIMECNT() == 70);
 
     SD_Shutdown();
     SD_TimerTick();
-    assert(TimeCount == 70);
+    assert(WOLF_GET_TIMECNT() == 70);
 }
 
 int main(void)
