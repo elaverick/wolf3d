@@ -300,6 +300,8 @@ void wolf_platform_mouse_command(
     int *dx)
 {
     WolfPlatform *platform = active_platform;
+    int input_cx = cx != NULL ? *cx : 0;
+    int input_dx = dx != NULL ? *dx : 0;
 
     if (ax != NULL) *ax = 0;
     if (bx != NULL) *bx = 0;
@@ -334,8 +336,8 @@ void wolf_platform_mouse_command(
             float offset_y =
                 ((float)window_height -
                 (float)platform->framebuffer_height * scale) * 0.5f;
-            int target_x = cx != NULL ? *cx : platform->mouse_x;
-            int target_y = dx != NULL ? *dx : platform->mouse_y;
+            int target_x = cx != NULL ? input_cx : platform->mouse_x;
+            int target_y = dx != NULL ? input_dx : platform->mouse_y;
 
             if (target_x < 0) target_x = 0;
             if (target_y < 0) target_y = 0;
