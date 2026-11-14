@@ -74,12 +74,41 @@ static void create_fixture(void)
     assert(fclose(file) == 0);
 }
 
+static void test_memory_purge_and_lock_semantics(void)
+{
+    memptr purgeable = NULL;
+    memptr locked = NULL;
+    memptr retained = NULL;
+
+    MM_GetPtr(&purgeable, 32);
+    MM_GetPtr(&locked, 64);
+    MM_GetPtr(&retained, 16);
+    assert(purgeable != NULL && locked != NULL && retained != NULL);
+
+    MM_SetPurge(&purgeable, 3);
+    MM_SetPurge(&locked, 3);
+    MM_SetLock(&locked, true);
+
+    MM_Purge();
+    assert(purgeable == NULL);
+    assert(locked != NULL);
+    assert(retained != NULL);
+
+    MM_SetLock(&locked, false);
+    MM_Purge();
+    assert(locked == NULL);
+
+    MM_FreePtr(&retained);
+    assert(retained == NULL);
+}
+
 int main(void)
 {
     const uint8_t *page;
     create_fixture();
 
     MM_Startup();
+    test_memory_purge_and_lock_semantics();
     PM_Startup();
 
     assert(ChunksInFile == 3);
