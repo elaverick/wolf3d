@@ -53,6 +53,10 @@ jobs:
         if: runner.os == 'Windows'
         run: cmake --build build-sdl --config Release --parallel
 
+      - name: Run SDL3 smoke test headlessly
+        if: runner.os == 'Windows'
+        run: ctest --test-dir build-sdl -C Release -R platform_smoke --output-on-failure
+
       - name: Configure original gameplay C sources
         run: >-
           cmake -S . -B build-game
