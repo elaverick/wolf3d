@@ -14,6 +14,7 @@ option(WOLF3D_BUILD_PLATFORM_SMOKE_TEST "Build the SDL3 framebuffer smoke test" 
 add_library(wolf3d_video STATIC
     src/video/indexed_framebuffer.c
     src/video/vga_memory.c
+    src/video/legacy_video.c
 )
 
 target_include_directories(wolf3d_video
@@ -61,6 +62,23 @@ if(BUILD_TESTING)
     endif()
 
     add_test(NAME vga_memory COMMAND test_vga_memory)
+
+    add_executable(test_legacy_video
+        tests/test_legacy_video.c
+    )
+
+    target_link_libraries(test_legacy_video
+        PRIVATE
+            wolf3d_video
+    )
+
+    if(MSVC)
+        target_compile_options(test_legacy_video PRIVATE /W4 /WX)
+    else()
+        target_compile_options(test_legacy_video PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
+    add_test(NAME legacy_video COMMAND test_legacy_video)
 endif()
 
 if(WOLF3D_BUILD_SDL3_PLATFORM)
