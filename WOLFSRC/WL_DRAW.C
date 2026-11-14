@@ -102,8 +102,8 @@ unsigned	pixx;
 
 int		xtile,ytile;
 int		xtilestep,ytilestep;
-long	xintercept,yintercept;
-long	xstep,ystep;
+fixed	xintercept,yintercept;
+fixed	xstep,ystep;
 
 int		horizwall[MAXWALLTILES],vertwall[MAXWALLTILES];
 
@@ -221,7 +221,9 @@ void TransformActor (objtype *ob)
 {
 	int ratio;
 	fixed gx,gy,gxt,gyt,nx,ny;
+#ifndef WOLF3D_NATIVE
 	long	temp;
+#endif
 
 //
 // translate point to view centered coordinates
@@ -302,7 +304,9 @@ boolean TransformTile (int tx, int ty, int *dispx, int *dispheight)
 {
 	int ratio;
 	fixed gx,gy,gxt,gyt,nx,ny;
+#ifndef WOLF3D_NATIVE
 	long	temp;
+#endif
 
 //
 // translate point to view centered coordinates
