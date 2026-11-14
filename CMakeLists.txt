@@ -11,6 +11,23 @@ include(CTest)
 option(WOLF3D_BUILD_SDL3_PLATFORM "Build the native SDL3 platform layer" ON)
 option(WOLF3D_BUILD_PLATFORM_SMOKE_TEST "Build the SDL3 framebuffer smoke test" ON)
 
+add_library(wolf3d_video STATIC
+    src/video/indexed_framebuffer.c
+    src/video/vga_memory.c
+    src/video/legacy_video.c
+)
+
+target_include_directories(wolf3d_video
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video
+)
+
+if(MSVC)
+    target_compile_options(wolf3d_video PRIVATE /W4 /WX)
+else()
+    target_compile_options(wolf3d_video PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
 add_library(wolf3d_legacy_vl STATIC
     src/video/legacy_vl.c
 )
@@ -29,23 +46,6 @@ if(MSVC)
     target_compile_options(wolf3d_legacy_vl PRIVATE /W4 /WX)
 else()
     target_compile_options(wolf3d_legacy_vl PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-
-add_library(wolf3d_video STATIC
-    src/video/indexed_framebuffer.c
-    src/video/vga_memory.c
-    src/video/legacy_video.c
-)
-
-target_include_directories(wolf3d_video
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/video
-)
-
-if(MSVC)
-    target_compile_options(wolf3d_video PRIVATE /W4 /WX)
-else()
-    target_compile_options(wolf3d_video PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
 if(BUILD_TESTING)
