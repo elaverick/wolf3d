@@ -1,10 +1,10 @@
 /*
  * Native sound manager.
  *
- * The original PC-speaker effects are short streams of frequency commands
- * timed at 140 Hz. Convert those commands to mono PCM for the SDL3 playback
- * stream. AdLib music and digitised Sound Blaster/Sound Source playback remain
- * disabled until their respective synthesis/streaming backends are ported.
+ * PC-speaker effects are packed resource streams: a four-byte command count,
+ * two-byte priority, then one frequency command per 140 Hz timer tick. Decode
+ * those bytes explicitly because a native compiler may pad the old C struct.
+ * The commands are synthesised to mono PCM and queued through SDL3.
  */
 #include "WL_DEF.H"
 #include "platform.h"
@@ -17,6 +17,7 @@
 #define NATIVE_PC_TICK_RATE (TickBase * 2u)
 #define NATIVE_PC_AMPLITUDE 7000
 #define NATIVE_PC_MAX_DURATION_TICKS (NATIVE_PC_TICK_RATE * 30u)
+#define NATIVE_PC_SOUND_HEADER_SIZE 6u
 
 boolean AdLibPresent = false;
 boolean SoundSourcePresent = false;
@@ -34,7 +35,23 @@ static void (*sound_user_hook)(void);
 static soundnames current_sound;
 static word current_priority;
 
-static int16_t *build_pc_samples(const PCSound *sound, size_t *sample_count)
+static uint16_t read_u16_le(const byte *data)
+{
+    return (uint16_t)((uint16_t)data[0] | ((uint16_t)data[1] << 8));
+}
+
+static uint32_t read_u32_le(const byte *data)
+{
+    return (uint32_t)data[0] |
+        ((uint32_t)data[1] << 8) |
+        ((uint32_t)data[2] << 16) |
+        ((uint32_t)data[3] << 24);
+}
+
+static int16_t *build_pc_samples(
+    const byte *commands,
+    uint32_t command_count,
+    size_t *sample_count)
 {
     uint64_t total_samples;
     uint64_t phase = 0;
@@ -42,13 +59,13 @@ static int16_t *build_pc_samples(const PCSound *sound, size_t *sample_count)
     uint32_t tick;
     int16_t *samples;
 
-    if (sound == NULL || sample_count == NULL ||
-        sound->common.length == 0 ||
-        sound->common.length > NATIVE_PC_MAX_DURATION_TICKS) {
+    if (commands == NULL || sample_count == NULL ||
+        command_count == 0 ||
+        command_count > NATIVE_PC_MAX_DURATION_TICKS) {
         return NULL;
     }
 
-    total_samples = ((uint64_t)sound->common.length *
+    total_samples = ((uint64_t)command_count *
         NATIVE_PC_SAMPLE_RATE) / NATIVE_PC_TICK_RATE;
     if (total_samples == 0 ||
         total_samples > (uint64_t)INT_MAX / sizeof(*samples)) {
@@ -61,8 +78,8 @@ static int16_t *build_pc_samples(const PCSound *sound, size_t *sample_count)
     }
 
     sample_index = 0;
-    for (tick = 0; tick < sound->common.length; ++tick) {
-        unsigned command = sound->data[tick];
+    for (tick = 0; tick < command_count; ++tick) {
+        unsigned command = commands[tick];
         uint64_t end_sample =
             ((uint64_t)(tick + 1u) * NATIVE_PC_SAMPLE_RATE) /
                 NATIVE_PC_TICK_RATE;
@@ -80,7 +97,6 @@ static int16_t *build_pc_samples(const PCSound *sound, size_t *sample_count)
             unsigned frequency = 1193180u / divisor;
             uint64_t phase_step;
 
-            /* Limit inaudible/aliased timer settings to the useful band. */
             if (frequency > 10000u) frequency = 10000u;
             if (frequency < 80u) frequency = 80u;
             phase_step =
@@ -143,7 +159,6 @@ void SD_Default(boolean gotit, SDMode sound_mode, SMMode music_mode)
     if (sound_mode == sdm_Off) {
         (void)SD_SetSoundMode(sdm_Off);
     } else {
-        /* PC speaker is the native fallback; no legacy hardware probing. */
         (void)SD_SetSoundMode(sdm_PC);
     }
     (void)SD_SetMusicMode(smm_Off);
@@ -158,7 +173,9 @@ void SD_PositionSound(int leftvol, int rightvol)
 
 boolean SD_PlaySound(soundnames sound)
 {
-    const PCSound *pc_sound;
+    const byte *chunk;
+    uint32_t command_count;
+    uint16_t priority;
     int queued_bytes;
     int16_t *samples;
     size_t sample_count = 0;
@@ -168,9 +185,14 @@ boolean SD_PlaySound(soundnames sound)
         return false;
     }
 
-    pc_sound = (const PCSound *)audiosegs[STARTPCSOUNDS + (int)sound];
-    /* Missing audio files are non-fatal and leave the game silent. */
-    if (pc_sound == NULL || pc_sound->common.length == 0) {
+    chunk = (const byte *)audiosegs[STARTPCSOUNDS + (int)sound];
+    if (chunk == NULL) {
+        return false;
+    }
+
+    command_count = read_u32_le(chunk);
+    priority = read_u16_le(chunk + 4);
+    if (command_count == 0) {
         return false;
     }
 
@@ -178,11 +200,12 @@ boolean SD_PlaySound(soundnames sound)
     if (queued_bytes < 0) {
         return false;
     }
-    if (queued_bytes > 0 && pc_sound->common.priority < current_priority) {
+    if (queued_bytes > 0 && priority < current_priority) {
         return false;
     }
 
-    samples = build_pc_samples(pc_sound, &sample_count);
+    samples = build_pc_samples(
+        chunk + NATIVE_PC_SOUND_HEADER_SIZE, command_count, &sample_count);
     if (samples == NULL) {
         return false;
     }
@@ -195,7 +218,7 @@ boolean SD_PlaySound(soundnames sound)
 
     if (submitted) {
         current_sound = sound;
-        current_priority = pc_sound->common.priority;
+        current_priority = priority;
     }
     return false;
 }
@@ -228,8 +251,8 @@ void SD_StartMusic(MusicGroup far *music)
 }
 
 void SD_MusicOn(void) {}
-void SD_MusicOff(void) { }
-void SD_FadeOutMusic(void) { }
+void SD_MusicOff(void) {}
+void SD_FadeOutMusic(void) {}
 
 void SD_SetUserHook(void (*hook)(void))
 {
@@ -251,8 +274,7 @@ boolean SD_SetSoundMode(SDMode mode)
             break;
         case sdm_PC:
         case sdm_AdLib:
-            /* The native implementation provides the PC speaker voice only. */
-            SoundMode = mode == sdm_Off ? sdm_Off : sdm_PC;
+            SoundMode = sdm_PC;
             break;
         default:
             return false;

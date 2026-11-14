@@ -43,6 +43,9 @@ typedef struct
 } huffnode;
 
 
+#ifdef WOLF3D_NATIVE
+#pragma pack(push, 2)
+#endif
 typedef struct
 {
 #ifdef WOLF3D_NATIVE
@@ -54,6 +57,9 @@ typedef struct
 #endif
     byte tileinfo[];
 } mapfiletype;
+#ifdef WOLF3D_NATIVE
+#pragma pack(pop)
+#endif
 
 
 /*
