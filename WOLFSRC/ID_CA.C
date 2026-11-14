@@ -2005,26 +2005,148 @@ void CAL_ExpandGrChunk (int chunk, byte far *source)
 
 void CA_CacheGrChunk (int chunk)
 {
-	long	pos,compressed;
+#ifdef WOLF3D_NATIVE
+    long chunk_start;
+    long chunk_end;
+    size_t compressed_size;
+    byte *compressed_data;
+
+    if (chunk < 0 || chunk >= NUMCHUNKS) {
+        Quit("CA_CacheGrChunk: invalid chunk index");
+        return;
+    }
+
+    grneeded[chunk] |= ca_levelbit;
+    if (grsegs[chunk] != NULL) {
+        MM_SetPurge(&grsegs[chunk], 0);
+        return;
+    }
+
+    /* Sparse chunks are deliberately absent from the graphics archive. */
+    if (GRFILEPOS(chunk) == -1) {
+        return;
+    }
+
+    if (!native_graphics_chunk_range(chunk, &chunk_start, &chunk_end) ||
+        chunk_end <= chunk_start) {
+        Quit("CA_CacheGrChunk: invalid graphics chunk range");
+        return;
+    }
+
+    compressed_size = (size_t)(chunk_end - chunk_start);
+    if (lseek(grhandle, chunk_start, SEEK_SET) != chunk_start) {
+        Quit("CA_CacheGrChunk: unable to seek graphics archive");
+        return;
+    }
+
+    compressed_data = (byte *)malloc(compressed_size);
+    if (compressed_data == NULL) {
+        Quit("CA_CacheGrChunk: unable to allocate compressed chunk");
+        return;
+    }
+
+    if (!CA_FarRead(grhandle, compressed_data, (long)compressed_size)) {
+        free(compressed_data);
+        Quit("CA_CacheGrChunk: truncated graphics chunk");
+        return;
+    }
+
+    if (!native_expand_graphics_chunk(
+            chunk, compressed_data, compressed_size)) {
+        free(compressed_data);
+        Quit("CA_CacheGrChunk: invalid graphics Huffman stream");
+        return;
+    }
+
+    free(compressed_data);
+#else
+
+#endif
+}
+
+
+
+//==========================================================================
+
+/*
+======================
+=
+= CA_CacheScreen
+=
+= Decompresses a chunk from disk straight onto the screen
+=
+======================
+*/
+
+#ifdef WOLF3D_NATIVE
+void CA_CacheScreen (int chunk)
+{
+    long chunk_start;
+    long chunk_end;
+    size_t compressed_size;
+    byte *compressed_data = NULL;
+    memptr decoded_buffer = NULL;
+    uint32_t expanded_size;
+    boolean decoded;
+
+    if (chunk < 0 || chunk >= NUMCHUNKS ||
+        !native_graphics_chunk_range(chunk, &chunk_start, &chunk_end) ||
+        chunk_end - chunk_start <= 4 ||
+        lseek(grhandle, chunk_start, SEEK_SET) != chunk_start) {
+        Quit("CA_CacheScreen: invalid graphics chunk range");
+        return;
+    }
+
+    compressed_size = (size_t)(chunk_end - chunk_start);
+    compressed_data = (byte *)malloc(compressed_size);
+    if (compressed_data == NULL ||
+        !CA_FarRead(grhandle, compressed_data, (long)compressed_size)) {
+        free(compressed_data);
+        Quit("CA_CacheScreen: graphics read failed");
+        return;
+    }
+
+    expanded_size = native_read_u32_le(compressed_data);
+    if (expanded_size < 320u * 200u ||
+        expanded_size > NATIVE_MAX_GRAPHICS_CHUNK_SIZE) {
+        free(compressed_data);
+        Quit("CA_CacheScreen: invalid decoded screen size");
+        return;
+    }
+
+    MM_GetPtr(&decoded_buffer, (unsigned long)expanded_size);
+    if (decoded_buffer == NULL ||
+        !wolf_native_huffman_expand(
+            compressed_data + 4,
+            compressed_size - 4u,
+            (byte *)decoded_buffer,
+            expanded_size,
+            (const WolfNativeHuffmanNode *)grhuffman,
+            WOLF_NATIVE_HUFFMAN_NODE_COUNT)) {
+        if (decoded_buffer != NULL) MM_FreePtr(&decoded_buffer);
+        free(compressed_data);
+        Quit("CA_CacheScreen: invalid graphics Huffman stream");
+        return;
+    }
+
+    VL_MemToScreen((byte *)decoded_buffer, 320, 200, 0, 0);
+    VW_MarkUpdateBlock(0, 0, 319, 199);
+
+    MM_FreePtr(&decoded_buffer);
+    free(compressed_data);
+}
+#else
+void CA_CacheScreen (int chunk)
+{
+	long	pos,compressed,expanded;
 	memptr	bigbufferseg;
 	byte	far *source;
 	int		next;
 
-	grneeded[chunk] |= ca_levelbit;		// make sure it doesn't get removed
-	if (grsegs[chunk])
-	{
-		MM_SetPurge (&grsegs[chunk],0);
-		return;							// allready in memory
-	}
-
 //
-// load the chunk into a buffer, either the miscbuffer if it fits, or allocate
-// a larger buffer
+// load the chunk into a buffer
 //
 	pos = GRFILEPOS(chunk);
-	if (pos<0)							// $FFFFFFFF start is a sparse tile
-	  return;
-
 	next = chunk +1;
 	while (GRFILEPOS(next) == -1)		// skip past any sparse tiles
 		next++;
@@ -2046,112 +2168,14 @@ void CA_CacheGrChunk (int chunk)
 		source = bigbufferseg;
 	}
 
-	CAL_ExpandGrChunk (chunk,source);
-
-	if (compressed>BUFFERSIZE)
-		MM_FreePtr(&bigbufferseg);
-}
-
-
-
-//==========================================================================
-
-/*
-======================
-=
-= CA_CacheScreen
-=
-= Decompresses a chunk from disk straight onto the screen
-=
-======================
-*/
-
-#ifdef WOLF3D_NATIVE
-void CA_CacheScreen (int chunk)
-{
-    long pos, compressed, expanded;
-    memptr compressed_buffer = NULL;
-    memptr decoded_buffer = NULL;
-    byte *source;
-    int next;
-
-    pos = GRFILEPOS(chunk);
-    next = chunk + 1;
-    while (GRFILEPOS(next) == -1)
-        ++next;
-    compressed = GRFILEPOS(next) - pos;
-
-    if (pos < 0 || compressed <= 4 || lseek(grhandle, pos, SEEK_SET) != pos)
-        Quit("CA_CacheScreen: invalid graphics chunk range");
-
-    MM_GetPtr(&compressed_buffer, (unsigned long)compressed);
-    if (mmerror) return;
-    MM_SetLock(&compressed_buffer, true);
-    if (!CA_FarRead(grhandle, (byte *)compressed_buffer, compressed)) {
-        MM_FreePtr(&compressed_buffer);
-        Quit("CA_CacheScreen: graphics read failed");
-        return;
-    }
-
-    source = (byte *)compressed_buffer;
-    expanded = (long)((uint32_t)source[0] |
-        ((uint32_t)source[1] << 8) |
-        ((uint32_t)source[2] << 16) |
-        ((uint32_t)source[3] << 24));
-    source += 4;
-
-    MM_GetPtr(&decoded_buffer, (unsigned long)expanded);
-    if (mmerror) {
-        MM_FreePtr(&compressed_buffer);
-        return;
-    }
-    CAL_HuffExpand(source, (byte *)decoded_buffer, expanded, grhuffman, false);
-    if (expanded < (long)(320u * 200u)) {
-        MM_FreePtr(&decoded_buffer);
-        MM_FreePtr(&compressed_buffer);
-        Quit("CA_CacheScreen: decoded screen is not 320x200 planar data");
-        return;
-    }
-
-    VL_MemToScreen((byte *)decoded_buffer, 320, 200, 0, 0);
-    VW_MarkUpdateBlock(0, 0, 319, 199);
-    MM_FreePtr(&decoded_buffer);
-    MM_FreePtr(&compressed_buffer);
-}
-#else
-void CA_CacheScreen (int chunk)
-{
-	long	pos,compressed,expanded;
-	memptr	bigbufferseg;
-	byte	far *source;
-	int		next;
-
-//
-// load the chunk into a buffer
-//
-	pos = GRFILEPOS(chunk);
-	next = chunk +1;
-	while (GRFILEPOS(next) == -1)		// skip past any sparse tiles
-		next++;
-	compressed = GRFILEPOS(next)-pos;
-
-	lseek(grhandle,pos,SEEK_SET);
-
-	MM_GetPtr(&bigbufferseg,compressed);
-	MM_SetLock (&bigbufferseg,true);
-	CA_FarRead(grhandle,bigbufferseg,compressed);
-	source = bigbufferseg;
-
 	expanded = *(long far *)source;
 	source += 4;			// skip over length
 
-//
-// allocate final space, decompress it, and free bigbuffer
-// Sprites need to have shifts made and various other junk
-//
-	CAL_HuffExpand (source,MK_FP(SCREENSEG,bufferofs),expanded,grhuffman,true);
-	VW_MarkUpdateBlock (0,0,319,199);
-	MM_FreePtr(&bigbufferseg);
+	VL_MemToScreen(source,320,200,0,0);
+	VW_MarkUpdateBlock(0,0,319,199);
+
+	if (compressed>BUFFERSIZE)
+		MM_FreePtr(&bigbufferseg);
 }
 #endif
 
