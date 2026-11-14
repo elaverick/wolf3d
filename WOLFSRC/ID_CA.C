@@ -17,6 +17,7 @@ loaded into the data segment
 #include "ID_HEADS.H"
 #ifdef WOLF3D_NATIVE
 #include "native_map_codec.h"
+#include "native_huffman.h"
 #endif
 #pragma hdrstop
 
@@ -33,14 +34,14 @@ loaded into the data segment
 =============================================================================
 */
 
+#ifdef WOLF3D_NATIVE
+typedef WolfNativeHuffmanNode huffnode;
+#else
 typedef struct
 {
-#ifdef WOLF3D_NATIVE
-  word bit0, bit1;
-#else
-  unsigned bit0, bit1;
-#endif
+    unsigned bit0, bit1;
 } huffnode;
+#endif
 
 
 #ifdef WOLF3D_NATIVE
@@ -171,7 +172,7 @@ long GRFILEPOS(int c)
     const byte *table = (const byte *)grstarts;
     size_t offset;
     uint32_t value;
-    if (c < 0 || table == NULL) return -1;
+    if (c < 0 || c > NUMCHUNKS || table == NULL) return -1;
     offset = (size_t)c * 3u;
     value = (uint32_t)table[offset] |
         ((uint32_t)table[offset + 1u] << 8) |
@@ -233,11 +234,162 @@ void CA_CloseDebug (void)
 ============================
 */
 
+#ifdef WOLF3D_NATIVE
+#define NATIVE_MAX_GRAPHICS_CHUNK_SIZE (64u * 1024u * 1024u)
+
+static uint32_t native_read_u32_le(const byte *source)
+{
+    return (uint32_t)source[0] |
+        ((uint32_t)source[1] << 8) |
+        ((uint32_t)source[2] << 16) |
+        ((uint32_t)source[3] << 24);
+}
+
+static boolean native_graphics_chunk_range(
+    int chunk,
+    long *chunk_start,
+    long *chunk_end)
+{
+    long file_size;
+    long start;
+    long end;
+    int next;
+
+    if (chunk < 0 || chunk >= NUMCHUNKS ||
+        chunk_start == NULL || chunk_end == NULL ||
+        grhandle < 0 || grstarts == NULL) {
+        return false;
+    }
+
+    start = GRFILEPOS(chunk);
+    if (start < 0) {
+        return false;
+    }
+
+    next = chunk + 1;
+    while (next <= NUMCHUNKS && GRFILEPOS(next) == -1) {
+        ++next;
+    }
+    if (next > NUMCHUNKS) {
+        return false;
+    }
+
+    end = GRFILEPOS(next);
+    file_size = filelength(grhandle);
+    if (file_size < 0 || end < start || end > file_size ||
+        (uint64_t)(end - start) > NATIVE_MAX_GRAPHICS_CHUNK_SIZE) {
+        return false;
+    }
+
+    *chunk_start = start;
+    *chunk_end = end;
+    return true;
+}
+
+static boolean native_expand_graphics_chunk(
+    int chunk,
+    const byte *compressed_data,
+    size_t compressed_size)
+{
+    const byte *encoded_data = compressed_data;
+    size_t encoded_size = compressed_size;
+    size_t expanded_size;
+    uint32_t declared_size = 0;
+
+    if (chunk < 0 || chunk >= NUMCHUNKS ||
+        compressed_data == NULL || grhuffman == NULL) {
+        return false;
+    }
+
+    if (chunk >= STARTTILE8 && chunk < STARTEXTERNS) {
+        if (chunk < STARTTILE8M) {
+            expanded_size = 64u * NUMTILE8;
+        } else if (chunk < STARTTILE16) {
+            expanded_size = 128u * NUMTILE8M;
+        } else if (chunk < STARTTILE16M) {
+            expanded_size = 64u * 4u;
+        } else if (chunk < STARTTILE32) {
+            expanded_size = 128u * 4u;
+        } else if (chunk < STARTTILE32M) {
+            expanded_size = 64u * 16u;
+        } else {
+            expanded_size = 128u * 16u;
+        }
+    } else {
+        if (compressed_size < 4u) {
+            return false;
+        }
+
+        declared_size = native_read_u32_le(compressed_data);
+        if (declared_size == 0 ||
+            declared_size > NATIVE_MAX_GRAPHICS_CHUNK_SIZE) {
+            return false;
+        }
+
+        expanded_size = declared_size;
+        encoded_data += 4;
+        encoded_size -= 4u;
+    }
+
+    MM_GetPtr(&grsegs[chunk], (unsigned long)expanded_size);
+    if (mmerror || grsegs[chunk] == NULL) {
+        return false;
+    }
+
+    if (!wolf_native_huffman_expand(
+            encoded_data,
+            encoded_size,
+            (byte *)grsegs[chunk],
+            expanded_size,
+            (const WolfNativeHuffmanNode *)grhuffman,
+            WOLF_NATIVE_HUFFMAN_NODE_COUNT)) {
+        MM_FreePtr((memptr *)&grsegs[chunk]);
+        return false;
+    }
+
+    return true;
+}
+#endif
+
 void CAL_GetGrChunkLength (int chunk)
 {
+#ifdef WOLF3D_NATIVE
+    byte size_bytes[4];
+    long start;
+    long end;
+
+    if (!native_graphics_chunk_range(chunk, &start, &end) ||
+        end - start < 4 ||
+        lseek(grhandle, start, SEEK_SET) != start ||
+        !CA_FarRead(grhandle, size_bytes, sizeof(size_bytes))) {
+        Quit("CAL_GetGrChunkLength: invalid graphics chunk range");
+        return;
+    }
+
+    {
+        uint32_t expanded_size = native_read_u32_le(size_bytes);
+        uint64_t compressed_size = (uint64_t)(end - start) - 4u;
+
+        if (expanded_size == 0 ||
+            expanded_size > NATIVE_MAX_GRAPHICS_CHUNK_SIZE ||
+            compressed_size == 0 ||
+            compressed_size > NATIVE_MAX_GRAPHICS_CHUNK_SIZE) {
+            Quit("CAL_GetGrChunkLength: invalid graphics chunk lengths");
+            return;
+        }
+
+        chunkexplen = (int32_t)expanded_size;
+        chunkcomplen = (int32_t)compressed_size;
+    }
+
+    if (lseek(grhandle, start + 4, SEEK_SET) != start + 4) {
+        Quit("CAL_GetGrChunkLength: unable to position graphics file");
+    }
+#else
 	lseek(grhandle,GRFILEPOS(chunk),SEEK_SET);
 	read(grhandle,&chunkexplen,sizeof(chunkexplen));
 	chunkcomplen = GRFILEPOS(chunk+1)-GRFILEPOS(chunk)-4;
+#endif
 }
 
 
