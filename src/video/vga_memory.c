@@ -359,6 +359,7 @@ bool wolf_vga_memory_screen_to_screen(
     int width_bytes,
     int height)
 {
+    size_t row_span;
     size_t source_last_row;
     size_t destination_last_row;
     int first_row;
@@ -374,16 +375,21 @@ bool wolf_vga_memory_screen_to_screen(
         return false;
     }
 
-    source_last_row = source_offset +
-        (size_t)(height - 1) * (size_t)memory->stride_bytes;
-    destination_last_row = destination_offset +
-        (size_t)(height - 1) * (size_t)memory->stride_bytes;
-
     if (source_offset > memory->plane_size ||
-        destination_offset > memory->plane_size ||
-        source_last_row < source_offset ||
-        destination_last_row < destination_offset ||
-        source_last_row > memory->plane_size ||
+        destination_offset > memory->plane_size) {
+        return false;
+    }
+
+    row_span = (size_t)(height - 1) * (size_t)memory->stride_bytes;
+    if (row_span > SIZE_MAX - source_offset ||
+        row_span > SIZE_MAX - destination_offset) {
+        return false;
+    }
+
+    source_last_row = source_offset + row_span;
+    destination_last_row = destination_offset + row_span;
+
+    if (source_last_row > memory->plane_size ||
         destination_last_row > memory->plane_size ||
         (size_t)width_bytes > memory->plane_size - source_last_row ||
         (size_t)width_bytes > memory->plane_size - destination_last_row) {
