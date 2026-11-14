@@ -52,7 +52,7 @@ static void update_mouse_position(
         (float)platform->framebuffer_width * scale) * 0.5f;
     float offset_y = ((float)window_height -
         (float)platform->framebuffer_height * scale) * 0.5f;
-    float x = (window_x - offset_x) / scale;
+    float x;
     float y;
 
     if (scale <= 0.0f) {
