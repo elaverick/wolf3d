@@ -317,7 +317,7 @@ void VL_DrawTile8String(
         return;
     }
 
-    while (*text != '\\0') {
+    while (*text != '\0') {
         unsigned character = (unsigned char)*text;
         const uint8_t *glyph = tile8_data + (size_t)character * 64u;
 
@@ -337,7 +337,7 @@ void VL_DrawLatch8String(
         return;
     }
 
-    while (*text != '\\0') {
+    while (*text != '\0') {
         size_t glyph_offset =
             (size_t)tile8_offset + ((size_t)(unsigned char)*text << 4);
 
