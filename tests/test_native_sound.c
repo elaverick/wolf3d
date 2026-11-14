@@ -84,7 +84,7 @@ static void setup_pc_sound(TestPCSound *sound,
 
 static void test_pc_speaker_stream_timing_and_silence(void)
 {
-    TestPCSound sound;
+    static TestPCSound sound;
 
     setup_pc_sound(&sound, 4, 10, 20, 0, 10, 10);
     audiosegs[STARTPCSOUNDS + SELECTWPNSND] = sound.bytes;
@@ -108,8 +108,8 @@ static void test_pc_speaker_stream_timing_and_silence(void)
 
 static void test_priority_and_replacement(void)
 {
-    TestPCSound low_priority;
-    TestPCSound high_priority;
+    static TestPCSound low_priority;
+    static TestPCSound high_priority;
 
     setup_pc_sound(&low_priority, 2, 1, 10, 10, 0, 0);
     audiosegs[STARTPCSOUNDS + HITWALLSND] = low_priority.bytes;
