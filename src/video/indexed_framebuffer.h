@@ -49,6 +49,29 @@ void wolf_framebuffer_fill_rect(
     int height,
     uint8_t colour);
 
+/*
+ * Convert a legacy VGA 6-bit DAC palette to 8-bit RGB components. Values above
+ * the VGA range are clamped to 63.
+ */
+void wolf_palette_expand_vga6(
+    const uint8_t source[256][3],
+    uint8_t destination[256][3]);
+
+/*
+ * Draw an image stored in the original Wolfenstein planar format.
+ *
+ * The source contains four consecutive planes. Each plane contains
+ * (width / 4) bytes per row, and width must be divisible by four.
+ */
+bool wolf_framebuffer_blit_planar4(
+    WolfFramebuffer *framebuffer,
+    int x,
+    int y,
+    int width,
+    int height,
+    const uint8_t *source,
+    size_t source_size);
+
 /* Copy a rectangle, clipping both source and destination to their bounds. */
 void wolf_framebuffer_copy(
     WolfFramebuffer *destination,
