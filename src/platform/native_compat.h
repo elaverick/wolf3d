@@ -12,6 +12,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -29,10 +30,18 @@
 #define O_BINARY 0
 #endif
 #ifndef S_IREAD
+#ifdef _WIN32
+#define S_IREAD _S_IREAD
+#else
 #define S_IREAD S_IRUSR
 #endif
+#endif
 #ifndef S_IWRITE
+#ifdef _WIN32
+#define S_IWRITE _S_IWRITE
+#else
 #define S_IWRITE S_IWUSR
+#endif
 #endif
 #ifndef FA_ARCH
 #define FA_ARCH 0x20
