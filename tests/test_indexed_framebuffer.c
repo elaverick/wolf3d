@@ -191,6 +191,61 @@ static void test_copy_clipping(void)
     assert_padding_untouched(copy_pixels);
 }
 
+static void test_planar_blit_and_palette(void)
+{
+    WolfFramebuffer framebuffer;
+    uint8_t planar[8] = {
+        0, 4,
+        1, 5,
+        2, 6,
+        3, 7
+    };
+    uint8_t source_palette[256][3] = {{0}};
+    uint8_t expanded_palette[256][3] = {{0}};
+
+    reset();
+    assert(wolf_framebuffer_init(&framebuffer, WIDTH, HEIGHT, PITCH,
+        pixels, sizeof(pixels)));
+
+    assert(wolf_framebuffer_blit_planar4(
+        &framebuffer, 1, 1, 4, 2, planar, sizeof(planar)));
+    assert(pixel(1, 1) == 0);
+    assert(pixel(2, 1) == 1);
+    assert(pixel(3, 1) == 2);
+    assert(pixel(4, 1) == 3);
+    assert(pixel(1, 2) == 4);
+    assert(pixel(4, 2) == 7);
+
+    wolf_framebuffer_clear(&framebuffer, 0xee);
+    assert(wolf_framebuffer_blit_planar4(
+        &framebuffer, -1, 1, 4, 2, planar, sizeof(planar)));
+    assert(pixel(0, 1) == 1);
+    assert(pixel(2, 1) == 3);
+    assert(pixel(0, 2) == 5);
+    assert(pixel(2, 2) == 7);
+    assert(pixel(3, 1) == 0xee);
+
+    assert(!wolf_framebuffer_blit_planar4(
+        &framebuffer, 0, 0, 3, 2, planar, sizeof(planar)));
+    assert(!wolf_framebuffer_blit_planar4(
+        &framebuffer, 0, 0, 4, 2, planar, sizeof(planar) - 1));
+
+    source_palette[0][0] = 0;
+    source_palette[1][0] = 1;
+    source_palette[2][1] = 31;
+    source_palette[3][2] = 63;
+    source_palette[4][0] = 255;
+    wolf_palette_expand_vga6(
+        (const uint8_t (*)[3])source_palette, expanded_palette);
+
+    assert(expanded_palette[0][0] == 0);
+    assert(expanded_palette[1][0] == 4);
+    assert(expanded_palette[2][1] == 125);
+    assert(expanded_palette[3][2] == 255);
+    assert(expanded_palette[4][0] == 255);
+    assert_padding_untouched(pixels);
+}
+
 int main(void)
 {
     test_initialisation();
@@ -199,6 +254,7 @@ int main(void)
     test_rectangle_clipping();
     test_copy_and_overlap();
     test_copy_clipping();
+    test_planar_blit_and_palette();
 
     puts("indexed framebuffer tests passed");
     return 0;
