@@ -34,6 +34,7 @@ target_include_directories(wolf3d_native_runtime
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/WOLFSRC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/platform
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/video
 )
 
 target_compile_definitions(wolf3d_native_runtime PUBLIC WOLF3D_NATIVE)
