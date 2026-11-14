@@ -12,11 +12,8 @@
 #include <stdint.h>
 
 extern int midangle;
-extern int angle;
 extern int focaltx;
 extern int focalty;
-extern int viewtx;
-extern int viewty;
 
 extern unsigned xpartialup;
 extern unsigned ypartialup;
@@ -162,7 +159,7 @@ static bool process_vertical_special(void)
 
     {
         fixed partial_step = (fixed)(
-            multiply_fixed_by_fraction(ystep, pwallpos) / 64);
+            ((int64_t)ystep * (int64_t)pwallpos) / 64);
 
         midpoint = yintercept + partial_step;
     }
@@ -277,7 +274,8 @@ void AsmRefresh(void)
             int y_coordinate = fixed_tile(yintercept);
             int x_coordinate = fixed_tile(xintercept);
 
-            if (crossing_is_vertical(y_coordinate)) {
+            if (crossing_is_vertical(y_coordinate) ||
+                !crossing_is_horizontal(x_coordinate)) {
                 if (!trace_vertical_tile()) {
                     break;
                 }
@@ -288,32 +286,26 @@ void AsmRefresh(void)
 
                 if ((tilehit & 0x80u) == 0) {
                     HitVertWall();
-                } else {
-                    if (!process_vertical_special()) {
-                        continue;
-                    }
-                }
-                break;
-            }
-
-            if (crossing_is_horizontal(x_coordinate)) {
-                if (!trace_horizontal_tile()) {
-                    break;
-                }
-
-                if (tilehit == 0) {
+                } else if (!process_vertical_special()) {
                     continue;
                 }
-
-                if ((tilehit & 0x80u) == 0) {
-                    HitHorizWall();
-                } else {
-                    if (!process_horizontal_special()) {
-                        continue;
-                    }
-                }
                 break;
             }
+
+            if (!trace_horizontal_tile()) {
+                break;
+            }
+
+            if (tilehit == 0) {
+                continue;
+            }
+
+            if ((tilehit & 0x80u) == 0) {
+                HitHorizWall();
+            } else if (!process_horizontal_special()) {
+                continue;
+            }
+            break;
         }
     }
 }
