@@ -2202,7 +2202,9 @@ void EnterCtrlData(int index,CustomCtrls *cust,void (*DrawRtn)(int),void (*Print
   if ((ci.button0|ci.button1|ci.button2|ci.button3)||
 	  ((type==KEYBOARDBTNS||type==KEYBOARDMOVE) && LastScan==sc_Enter))
   {
-   tick=TimeCount=picked=0;
+   tick = 0;
+   picked = 0;
+   WOLF_SET_TIMECNT(0);
    SETFONTCOLOR(0,TEXTCOLOR);
 
    do
@@ -2229,7 +2231,7 @@ void EnterCtrlData(int index,CustomCtrls *cust,void (*DrawRtn)(int),void (*Print
 	SD_PlaySound(HITWALLSND);
 	 }
 	 tick^=1;
-	 TimeCount=0;
+	 WOLF_SET_TIMECNT(0);
 	 VW_UpdateScreen();
 	}
 
@@ -3148,7 +3150,7 @@ int HandleMenu(CP_iteminfo *item_i,CP_itemtype far *items,void (*routine)(int w)
 	shape=C_CURSOR1PIC;
 	timer=8;
 	exit=0;
-	TimeCount=0;
+	WOLF_SET_TIMECNT(0);
 	IN_ClearKeysDown();
 
 
@@ -3159,7 +3161,7 @@ int HandleMenu(CP_iteminfo *item_i,CP_itemtype far *items,void (*routine)(int w)
 		//
 		if (TimeCount>timer)
 		{
-			TimeCount=0;
+			WOLF_SET_TIMECNT(0);
 			if (shape==C_CURSOR1PIC)
 			{
 				shape=C_CURSOR2PIC;
@@ -3383,7 +3385,7 @@ void DrawHalfStep(int x,int y)
 	VWB_DrawPic(x,y,C_CURSOR1PIC);
 	VW_UpdateScreen();
 	SD_PlaySound(MOVEGUN1SND);
-	TimeCount=0;
+	WOLF_SET_TIMECNT(0);
 	while(TimeCount<8);
 }
 
@@ -3421,7 +3423,7 @@ void TicDelay(int count)
 	ControlInfo ci;
 
 
-	TimeCount=0;
+	WOLF_SET_TIMECNT(0);
 	do
 	{
 		ReadAnyControl(&ci);
@@ -3616,7 +3618,7 @@ int Confirm(char far *string)
 	//
 	x=PrintX;
 	y=PrintY;
-	TimeCount=0;
+	WOLF_SET_TIMECNT(0);
 
 	do
 	{
@@ -3634,7 +3636,7 @@ int Confirm(char far *string)
 			}
 			VW_UpdateScreen();
 			tick^=1;
-			TimeCount=0;
+			WOLF_SET_TIMECNT(0);
 		}
 
 		#ifndef SPEAR
