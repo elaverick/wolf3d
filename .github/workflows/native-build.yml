@@ -33,6 +33,22 @@ jobs:
       - name: Run tests
         run: ctest --test-dir build -C Release --output-on-failure
 
+      - name: Install SDL3 with vcpkg
+        if: runner.os == 'Windows'
+        run: vcpkg install sdl3:x64-windows
+
+      - name: Configure SDL3 platform build
+        if: runner.os == 'Windows'
+        run: >-
+          cmake -S . -B build-sdl
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+          -DVCPKG_TARGET_TRIPLET=x64-windows
+          -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build SDL3 platform and smoke test
+        if: runner.os == 'Windows'
+        run: cmake --build build-sdl --config Release --parallel
+
       - name: Configure sanitised build
         if: runner.os == 'Linux'
         run: >-
