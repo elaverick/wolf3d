@@ -418,8 +418,14 @@ int	CalcHeight (void)
 #ifdef WOLF3D_NATIVE
 byte		*postpage;
 unsigned	posttexture;
+#define POST_TEXTURE_EQUALS(value) ((unsigned)(value) == posttexture)
+#define SET_POST_TEXTURE(value) (posttexture = (unsigned)(value))
+#define SET_POST_PAGE(value) (postpage = (byte *)PM_GetPage(value))
 #else
 long		postsource;
+#define POST_TEXTURE_EQUALS(value) ((unsigned)(value) == (unsigned)postsource)
+#define SET_POST_TEXTURE(value) ((unsigned)postsource = (unsigned)(value))
+#define SET_POST_PAGE(value) (*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(value))
 #endif
 unsigned	postx;
 unsigned	postwidth;
@@ -543,7 +549,7 @@ void HitVertWall (void)
 	if (lastside==1 && lastintercept == xtile && lasttilehit == tilehit)
 	{
 		// in the same wall type as last time, so check for optimized draw
-		if (texture == (unsigned)postsource)
+		if (POST_TEXTURE_EQUALS(texture))
 		{
 		// wide scale
 			postwidth++;
@@ -556,7 +562,7 @@ void HitVertWall (void)
 #ifdef WOLF3D_NATIVE
 			posttexture = texture;
 #else
-			(unsigned)postsource = texture;
+			SET_POST_TEXTURE(texture);
 #endif
 			postwidth = 1;
 			postx = pixx;
@@ -594,8 +600,8 @@ void HitVertWall (void)
 		postpage = (byte *)PM_GetPage(wallpic);
 		posttexture = texture;
 #else
-		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(wallpic);
-		(unsigned)postsource = texture;
+		SET_POST_PAGE(wallpic);
+		SET_POST_TEXTURE(texture);
 #endif
 #endif
 
@@ -629,7 +635,7 @@ void HitHorizWall (void)
 	if (lastside==0 && lastintercept == ytile && lasttilehit == tilehit)
 	{
 		// in the same wall type as last time, so check for optimized draw
-		if (texture == (unsigned)postsource)
+		if (POST_TEXTURE_EQUALS(texture))
 		{
 		// wide scale
 			postwidth++;
@@ -642,7 +648,7 @@ void HitHorizWall (void)
 #ifdef WOLF3D_NATIVE
 			posttexture = texture;
 #else
-			(unsigned)postsource = texture;
+			SET_POST_TEXTURE(texture);
 #endif
 			postwidth = 1;
 			postx = pixx;
@@ -680,8 +686,8 @@ void HitHorizWall (void)
 		postpage = (byte *)PM_GetPage(wallpic);
 		posttexture = texture;
 #else
-		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(wallpic);
-		(unsigned)postsource = texture;
+		SET_POST_PAGE(wallpic);
+		SET_POST_TEXTURE(texture);
 #endif
 #endif
 	}
@@ -710,7 +716,7 @@ void HitHorizDoor (void)
 	if (lasttilehit == tilehit)
 	{
 	// in the same door as last time, so check for optimized draw
-		if (texture == (unsigned)postsource)
+		if (POST_TEXTURE_EQUALS(texture))
 		{
 		// wide scale
 			postwidth++;
@@ -723,7 +729,7 @@ void HitHorizDoor (void)
 #ifdef WOLF3D_NATIVE
 			posttexture = texture;
 #else
-			(unsigned)postsource = texture;
+			SET_POST_TEXTURE(texture);
 #endif
 			postwidth = 1;
 			postx = pixx;
@@ -759,8 +765,8 @@ void HitHorizDoor (void)
 		postpage = (byte *)PM_GetPage(doorpage);
 		posttexture = texture;
 #else
-		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(doorpage);
-		(unsigned)postsource = texture;
+		SET_POST_PAGE(doorpage);
+		SET_POST_TEXTURE(texture);
 #endif
 	}
 }
@@ -787,7 +793,7 @@ void HitVertDoor (void)
 	if (lasttilehit == tilehit)
 	{
 	// in the same door as last time, so check for optimized draw
-		if (texture == (unsigned)postsource)
+		if (POST_TEXTURE_EQUALS(texture))
 		{
 		// wide scale
 			postwidth++;
@@ -800,7 +806,7 @@ void HitVertDoor (void)
 #ifdef WOLF3D_NATIVE
 			posttexture = texture;
 #else
-			(unsigned)postsource = texture;
+			SET_POST_TEXTURE(texture);
 #endif
 			postwidth = 1;
 			postx = pixx;
@@ -836,8 +842,8 @@ void HitVertDoor (void)
 		postpage = (byte *)PM_GetPage(doorpage+1);
 		posttexture = texture;
 #else
-		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(doorpage+1);
-		(unsigned)postsource = texture;
+		SET_POST_PAGE(doorpage+1);
+		SET_POST_TEXTURE(texture);
 #endif
 	}
 }
@@ -875,7 +881,7 @@ void HitHorizPWall (void)
 	if (lasttilehit == tilehit)
 	{
 		// in the same wall type as last time, so check for optimized draw
-		if (texture == (unsigned)postsource)
+		if (POST_TEXTURE_EQUALS(texture))
 		{
 		// wide scale
 			postwidth++;
@@ -888,7 +894,7 @@ void HitHorizPWall (void)
 #ifdef WOLF3D_NATIVE
 			posttexture = texture;
 #else
-			(unsigned)postsource = texture;
+			SET_POST_TEXTURE(texture);
 #endif
 			postwidth = 1;
 			postx = pixx;
@@ -914,8 +920,8 @@ void HitHorizPWall (void)
 		postpage = (byte *)PM_GetPage(wallpic);
 		posttexture = texture;
 #else
-		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(wallpic);
-		(unsigned)postsource = texture;
+		SET_POST_PAGE(wallpic);
+		SET_POST_TEXTURE(texture);
 #endif
 #endif
 	}
@@ -953,7 +959,7 @@ void HitVertPWall (void)
 	if (lasttilehit == tilehit)
 	{
 		// in the same wall type as last time, so check for optimized draw
-		if (texture == (unsigned)postsource)
+		if (POST_TEXTURE_EQUALS(texture))
 		{
 		// wide scale
 			postwidth++;
@@ -966,7 +972,7 @@ void HitVertPWall (void)
 #ifdef WOLF3D_NATIVE
 			posttexture = texture;
 #else
-			(unsigned)postsource = texture;
+			SET_POST_TEXTURE(texture);
 #endif
 			postwidth = 1;
 			postx = pixx;
@@ -992,8 +998,8 @@ void HitVertPWall (void)
 		postpage = (byte *)PM_GetPage(wallpic);
 		posttexture = texture;
 #else
-		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(wallpic);
-		(unsigned)postsource = texture;
+		SET_POST_PAGE(wallpic);
+		SET_POST_TEXTURE(texture);
 #endif
 #endif
 	}
@@ -1096,46 +1102,52 @@ unsigned vgaCeiling[]=
 
 void VGAClearScreen (void)
 {
- unsigned ceiling=vgaCeiling[gamestate.episode*10+mapon];
+#ifdef WOLF3D_NATIVE
+	int view_left = 0;
 
-  //
-  // clear the screen
-  //
-asm	mov	dx,SC_INDEX
-asm	mov	ax,SC_MAPMASK+15*256	// write through all planes
-asm	out	dx,ax
+	wolf_legacy_video_fill_rect(
+		VL_GetVideo(), view_left, 0, viewwidth, viewheight / 2,
+		(byte)(ceiling & 0xff));
+	wolf_legacy_video_fill_rect(
+		VL_GetVideo(), view_left, viewheight / 2, viewwidth,
+		viewheight - viewheight / 2, 0x19);
+#else
+asm  mov  dx,SC_INDEX
+asm  mov  ax,SC_MAPMASK+15*256  // write through all planes
+asm  out  dx,ax
 
-asm	mov	dx,80
-asm	mov	ax,[viewwidth]
-asm	shr	ax,2
-asm	sub	dx,ax					// dx = 40-viewwidth/2
+asm  mov  dx,80
+asm  mov  ax,[viewwidth]
+asm  shr  ax,2
+asm  sub  dx,ax          // dx = 40-viewwidth/2
 
-asm	mov	bx,[viewwidth]
-asm	shr	bx,3					// bl = viewwidth/8
-asm	mov	bh,BYTE PTR [viewheight]
-asm	shr	bh,1					// half height
+asm  mov  bx,[viewwidth]
+asm  shr  bx,3          // bl = viewwidth/8
+asm  mov  bh,BYTE PTR [viewheight]
+asm  shr  bh,1          // half height
 
-asm	mov	es,[screenseg]
-asm	mov	di,[bufferofs]
-asm	mov	ax,[ceiling]
+asm  mov  es,[screenseg]
+asm  mov  di,[bufferofs]
+asm  mov  ax,[ceiling]
 
 toploop:
-asm	mov	cl,bl
-asm	rep	stosw
-asm	add	di,dx
-asm	dec	bh
-asm	jnz	toploop
+asm  mov  cl,bl
+asm  rep  stosw
+asm  add  di,dx
+asm  dec  bh
+asm  jnz  toploop
 
-asm	mov	bh,BYTE PTR [viewheight]
-asm	shr	bh,1					// half height
-asm	mov	ax,0x1919
+asm  mov  bh,BYTE PTR [viewheight]
+asm  shr  bh,1          // half height
+asm  mov  ax,0x1919
 
 bottomloop:
-asm	mov	cl,bl
-asm	rep	stosw
-asm	add	di,dx
-asm	dec	bh
-asm	jnz	bottomloop
+asm  mov  cl,bl
+asm  rep  stosw
+asm  add  di,dx
+asm  dec  bh
+asm  jnz  bottomloop
+#endif
 }
 
 //==========================================================================
@@ -1465,17 +1477,23 @@ void	ThreeDRefresh (void)
 	int tracedir;
 
 // this wouldn't need to be done except for my debugger/video wierdness
+#ifndef WOLF3D_NATIVE
 	outportb (SC_INDEX,SC_MAPMASK);
+#endif
 
 //
 // clear out the traced array
 //
+#ifdef WOLF3D_NATIVE
+	memset(spotvis, 0, sizeof(spotvis));
+#else
 asm	mov	ax,ds
 asm	mov	es,ax
 asm	mov	di,OFFSET spotvis
 asm	xor	ax,ax
 asm	mov	cx,2048							// 64*64 / 2
 asm	rep stosw
+#endif
 
 	bufferofs += screenofs;
 
@@ -1507,6 +1525,10 @@ asm	rep stosw
 	bufferofs -= screenofs;
 	displayofs = bufferofs;
 
+#ifdef WOLF3D_NATIVE
+	VL_SetScreen((int)displayofs, 0);
+	(void)VL_Present();
+#else
 	asm	cli
 	asm	mov	cx,[displayofs]
 	asm	mov	dx,3d4h		// CRTC address register
@@ -1516,6 +1538,7 @@ asm	rep stosw
 	asm	mov	al,ch
 	asm	out	dx,al   	// set the high byte
 	asm	sti
+#endif
 
 	bufferofs += SCREENSIZE;
 	if (bufferofs > PAGE3START)
