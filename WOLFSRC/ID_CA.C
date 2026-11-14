@@ -1196,6 +1196,154 @@ asm	mov	ds,ax
 
 void CAL_SetupGrFile (void)
 {
+#ifdef WOLF3D_NATIVE
+    char fname[13];
+    int handle;
+    int chunk;
+    long expected_dict_size;
+    long expected_head_size;
+    long header_file_size;
+    long graphics_file_size;
+    long chunk_start;
+    long chunk_end;
+    int next_chunk;
+    memptr compressed_header = NULL;
+
+    expected_dict_size = (long)sizeof(grhuffman);
+    strcpy(fname, gdictname);
+    strcat(fname, extension);
+    handle = open(fname, O_RDONLY | O_BINARY, S_IREAD);
+    if (handle < 0) {
+        CA_CannotOpen(fname);
+        return;
+    }
+
+    header_file_size = filelength(handle);
+    if (header_file_size != expected_dict_size ||
+        !CA_FarRead(handle, (byte *)grhuffman, expected_dict_size)) {
+        close(handle);
+        Quit("CAL_SetupGrFile: invalid or truncated graphics dictionary");
+        return;
+    }
+    close(handle);
+    CAL_OptimizeNodes(grhuffman);
+
+    expected_head_size = (long)(NUMCHUNKS + 1) * FILEPOSSIZE;
+    strcpy(fname, gheadname);
+    strcat(fname, extension);
+    handle = open(fname, O_RDONLY | O_BINARY, S_IREAD);
+    if (handle < 0) {
+        CA_CannotOpen(fname);
+        return;
+    }
+
+    header_file_size = filelength(handle);
+    if (header_file_size != expected_head_size) {
+        close(handle);
+        Quit("CAL_SetupGrFile: invalid graphics offset table size");
+        return;
+    }
+
+    MM_GetPtr((memptr *)&grstarts, (unsigned long)expected_head_size);
+    if (grstarts == NULL ||
+        !CA_FarRead(handle, (byte *)grstarts, expected_head_size)) {
+        if (grstarts != NULL) MM_FreePtr((memptr *)&grstarts);
+        grstarts = NULL;
+        close(handle);
+        Quit("CAL_SetupGrFile: unable to read graphics offset table");
+        return;
+    }
+    close(handle);
+
+    strcpy(fname, gfilename);
+    strcat(fname, extension);
+    grhandle = open(fname, O_RDONLY | O_BINARY, S_IREAD);
+    if (grhandle < 0) {
+        CA_CannotOpen(fname);
+        return;
+    }
+
+    graphics_file_size = filelength(grhandle);
+    if (graphics_file_size < 0) {
+        close(grhandle);
+        grhandle = -1;
+        Quit("CAL_SetupGrFile: unable to determine graphics file size");
+        return;
+    }
+
+    /*
+     * The final table entry is the end of the last non-sparse chunk. Every
+     * other non-sparse chunk must have a later non-sparse endpoint in range.
+     */
+    chunk_end = GRFILEPOS(NUMCHUNKS);
+    if (chunk_end < 0 || chunk_end > graphics_file_size) {
+        Quit("CAL_SetupGrFile: missing or invalid final graphics offset");
+        return;
+    }
+
+    for (chunk = 0; chunk < NUMCHUNKS; ++chunk) {
+        chunk_start = GRFILEPOS(chunk);
+        if (chunk_start == -1) {
+            continue;
+        }
+        if (chunk_start < 0 || chunk_start > graphics_file_size) {
+            Quit("CAL_SetupGrFile: graphics chunk offset outside file");
+            return;
+        }
+
+        next_chunk = chunk + 1;
+        while (next_chunk <= NUMCHUNKS &&
+            GRFILEPOS(next_chunk) == -1) {
+            ++next_chunk;
+        }
+        if (next_chunk > NUMCHUNKS) {
+            Quit("CAL_SetupGrFile: graphics chunk has no end offset");
+            return;
+        }
+
+        chunk_end = GRFILEPOS(next_chunk);
+        if (chunk_end < chunk_start || chunk_end > graphics_file_size) {
+            Quit("CAL_SetupGrFile: invalid graphics chunk range");
+            return;
+        }
+    }
+
+    MM_GetPtr((memptr *)&pictable, NUMPICS * sizeof(pictabletype));
+    if (pictable == NULL) {
+        Quit("CAL_SetupGrFile: unable to allocate picture table");
+        return;
+    }
+
+    CAL_GetGrChunkLength(STRUCTPIC);
+    if (chunkexplen != (int32_t)(NUMPICS * sizeof(pictabletype)) ||
+        chunkcomplen <= 0) {
+        Quit("CAL_SetupGrFile: invalid STRUCTPIC chunk dimensions");
+        return;
+    }
+
+    MM_GetPtr(&compressed_header, (unsigned long)chunkcomplen);
+    if (compressed_header == NULL ||
+        !CA_FarRead(grhandle, (byte *)compressed_header, chunkcomplen)) {
+        if (compressed_header != NULL) MM_FreePtr(&compressed_header);
+        Quit("CAL_SetupGrFile: unable to read STRUCTPIC chunk");
+        return;
+    }
+
+    if (!wolf_native_huffman_expand(
+            (const byte *)compressed_header,
+            (size_t)chunkcomplen,
+            (byte *)pictable,
+            NUMPICS * sizeof(pictabletype),
+            (const WolfNativeHuffmanNode *)grhuffman,
+            WOLF_NATIVE_HUFFMAN_NODE_COUNT)) {
+        MM_FreePtr(&compressed_header);
+        Quit("CAL_SetupGrFile: invalid STRUCTPIC Huffman stream");
+        return;
+    }
+
+    MM_FreePtr(&compressed_header);
+#else
+
 	char fname[13];
 	int handle;
 	memptr compseg;
@@ -1262,6 +1410,8 @@ void CAL_SetupGrFile (void)
 	CA_FarRead (grhandle,compseg,chunkcomplen);
 	CAL_HuffExpand (compseg, (byte huge *)pictable,NUMPICS*sizeof(pictabletype),grhuffman,false);
 	MM_FreePtr(&compseg);
+
+#endif
 }
 
 //==========================================================================
