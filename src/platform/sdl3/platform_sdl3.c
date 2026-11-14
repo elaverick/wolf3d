@@ -199,6 +199,11 @@ uint64_t wolf_platform_time_ms(void)
     return SDL_GetTicks();
 }
 
+void wolf_platform_delay_ms(uint32_t milliseconds)
+{
+    SDL_Delay(milliseconds);
+}
+
 void wolf_platform_destroy(WolfPlatform *platform)
 {
     if (platform == NULL) {
