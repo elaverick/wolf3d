@@ -204,6 +204,28 @@ static void test_horizontal_special_tile_dispatch(void)
     assert(vertical_door_hits == 0);
 }
 
+static void test_negative_pushwall_step_uses_arithmetic_rounding(void)
+{
+    prepare_vertical_special_ray();
+
+    /*
+     * Arrange the vertical intercept 591 fixed units above a tile boundary.
+     * A negative 37837-unit step divided by 64 is -591 with C truncation but
+     * -592 with the original arithmetic shift. The latter crosses the tile
+     * boundary and passes the partially moved pushwall.
+     */
+    viewy = (fixed)(10 * TILEGLOBAL + 19509);
+    tilemap[11][10] = (byte)(0xc0u | 5u);
+    pwallpos = 1;
+
+    AsmRefresh();
+
+    assert(vertical_pushwall_hits == 0);
+    assert(horizontal_pushwall_hits == 0);
+    assert(vertical_door_hits == 0);
+    assert(horizontal_door_hits == 0);
+}
+
 static void test_open_door_allows_ray_to_reach_next_wall(void)
 {
     prepare_vertical_special_ray();
@@ -233,6 +255,7 @@ int main(void)
     test_ray_stops_at_map_boundary();
     test_vertical_special_tile_dispatch();
     test_horizontal_special_tile_dispatch();
+    test_negative_pushwall_step_uses_arithmetic_rounding();
     test_open_door_allows_ray_to_reach_next_wall();
 
     puts("native raycaster tests passed");

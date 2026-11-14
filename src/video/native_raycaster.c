@@ -48,6 +48,22 @@ static fixed multiply_fixed_by_fraction(fixed value, unsigned fraction)
     return (fixed)(((int64_t)value * (int64_t)fraction) / 65536);
 }
 
+/*
+ * The original 16-bit renderer used SAR for half-step door tests and
+ * six-bit pushwall offsets. C division truncates negative values toward zero;
+ * SAR rounds them toward negative infinity. Spell that out so tile-edge
+ * decisions match the original implementation on every C compiler.
+ */
+static int64_t arithmetic_shift_right(int64_t value, unsigned shift)
+{
+    int64_t divisor = (int64_t)1 << shift;
+
+    if (value >= 0) {
+        return value / divisor;
+    }
+    return -(((-value) + divisor - 1) / divisor);
+}
+
 static int fixed_tile(fixed value)
 {
     int64_t divisor = (int64_t)1 << TILESHIFT;
@@ -153,8 +169,7 @@ static bool process_vertical_special(void)
     if ((tilehit & 0x40u) == 0) {
         fixed partial_step;
 
-        partial_step = (fixed)(multiply_fixed_by_fraction(
-            ystep, 0x8000u));
+        partial_step = (fixed)arithmetic_shift_right(ystep, 1u);
         midpoint = yintercept + partial_step;
 
         door_number = tilehit & 0x7fu;
@@ -173,8 +188,8 @@ static bool process_vertical_special(void)
     }
 
     {
-        fixed partial_step = (fixed)(
-            ((int64_t)ystep * (int64_t)pwallpos) / 64);
+        fixed partial_step = (fixed)arithmetic_shift_right(
+            (int64_t)ystep * (int64_t)pwallpos, 6u);
 
         midpoint = yintercept + partial_step;
     }
@@ -197,8 +212,7 @@ static bool process_horizontal_special(void)
     fixed midpoint;
 
     if ((tilehit & 0x40u) == 0) {
-        fixed partial_step = (fixed)(
-            multiply_fixed_by_fraction(xstep, 0x8000u));
+        fixed partial_step = (fixed)arithmetic_shift_right(xstep, 1u);
 
         midpoint = xintercept + partial_step;
         door_number = tilehit & 0x7fu;
@@ -218,8 +232,8 @@ static bool process_horizontal_special(void)
     }
 
     {
-        fixed partial_step = (fixed)(
-            ((int64_t)xstep * (int64_t)pwallpos) / 64);
+        fixed partial_step = (fixed)arithmetic_shift_right(
+            (int64_t)xstep * (int64_t)pwallpos, 6u);
 
         midpoint = xintercept + partial_step;
     }
