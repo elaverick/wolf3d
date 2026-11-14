@@ -46,7 +46,6 @@ endif()
 
 add_library(wolf3d_legacy_vl STATIC
     src/video/legacy_vl.c
-    src/input/legacy_input.c
 )
 
 target_include_directories(wolf3d_legacy_vl
