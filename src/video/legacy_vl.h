@@ -39,8 +39,8 @@ void VL_SetScreen(int crtc, int horizontal_pan);
 void VL_FillPalette(int red, int green, int blue);
 void VL_SetColor(int index, int red, int green, int blue);
 void VL_GetColor(int index, int *red, int *green, int *blue);
-void VL_SetPalette(const uint8_t palette[256][3]);
-void VL_GetPalette(uint8_t palette[256][3]);
+void VL_SetPalette(const uint8_t *palette);
+void VL_GetPalette(uint8_t *palette);
 void VL_FadeOut(
     int first_colour,
     int last_colour,
@@ -51,7 +51,7 @@ void VL_FadeOut(
 void VL_FadeIn(
     int first_colour,
     int last_colour,
-    const uint8_t palette[256][3],
+    const uint8_t *palette,
     int steps);
 void VL_ColorBorder(int colour);
 
@@ -70,7 +70,7 @@ void VL_MemToScreen(
 void VL_MaskedToScreen(
     uint8_t *source, int width, int height, int x, int y);
 void VL_DrawTile8String(
-    const char *text, const uint8_t *tile8_data, int x, int y);
+    const char *text, const char *tile8_data, int x, int y);
 void VL_DrawLatch8String(
     const char *text, unsigned tile8_offset, int x, int y);
 void VL_SizeTile8String(const char *text, int *width, int *height);
