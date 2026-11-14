@@ -31,6 +31,7 @@ add_library(wolf3d_video STATIC
     src/video/indexed_framebuffer.c
     src/video/vga_memory.c
     src/video/legacy_video.c
+    src/video/native_sprite_scaler.c
 )
 
 target_include_directories(wolf3d_video
@@ -171,6 +172,23 @@ if(BUILD_TESTING)
     endif()
 
     add_test(NAME native_input COMMAND test_native_input)
+
+    add_executable(test_native_sprite_scaler
+        tests/test_native_sprite_scaler.c
+    )
+
+    target_link_libraries(test_native_sprite_scaler
+        PRIVATE
+            wolf3d_video
+    )
+
+    if(MSVC)
+        target_compile_options(test_native_sprite_scaler PRIVATE /W4 /WX)
+    else()
+        target_compile_options(test_native_sprite_scaler PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
+    add_test(NAME native_sprite_scaler COMMAND test_native_sprite_scaler)
 
     add_executable(test_native_raycaster
         tests/test_native_raycaster.c
