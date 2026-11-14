@@ -29,6 +29,7 @@ add_library(wolf3d_native_runtime STATIC
     src/platform/native_memory_manager.c
     src/platform/native_page_manager.c
     src/platform/native_map_codec.c
+    src/platform/native_huffman.c
 )
 
 target_include_directories(wolf3d_native_runtime
@@ -252,6 +253,23 @@ if(BUILD_TESTING)
     endif()
 
     add_test(NAME native_map_codec COMMAND test_native_map_codec)
+
+    add_executable(test_native_huffman
+        tests/test_native_huffman.c
+        src/platform/native_huffman.c
+    )
+
+    target_include_directories(test_native_huffman PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/platform
+    )
+
+    if(MSVC)
+        target_compile_options(test_native_huffman PRIVATE /W4 /WX)
+    else()
+        target_compile_options(test_native_huffman PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
+    add_test(NAME native_huffman COMMAND test_native_huffman)
 
     add_executable(test_native_sprite_scaler
         tests/test_native_sprite_scaler.c
