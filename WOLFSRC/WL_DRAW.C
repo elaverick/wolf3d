@@ -1359,7 +1359,7 @@ void DrawPlayerWeapon (void)
 #ifndef SPEAR
 	if (gamestate.victoryflag)
 	{
-		if (player->state == &s_deathcam && (TimeCount&32) )
+		if (player->state == &s_deathcam && (WOLF_GET_TIMECNT()&32) )
 			SimpleScaleShape(viewwidth/2,SPR_DEATHCAM,viewheight+1);
 		return;
 	}
@@ -1394,12 +1394,12 @@ void CalcTics (void)
 //
 // calculate tics since last refresh for adaptive timing
 //
-	if (lasttimecount > TimeCount)
+	if (lasttimecount > WOLF_GET_TIMECNT())
 		WOLF_SET_TIMECNT(lasttimecount);		// if the game was paused a LONG time
 
 	do
 	{
-		newtime = TimeCount;
+		newtime = WOLF_GET_TIMECNT();
 		tics = newtime-lasttimecount;
 	} while (!tics);			// make sure at least one tic passes
 
@@ -1415,7 +1415,7 @@ void CalcTics (void)
 
 	if (tics>MAXTICS)
 	{
-		WOLF_SET_TIMECNT(TimeCount - (tics-MAXTICS));
+		WOLF_SET_TIMECNT(WOLF_GET_TIMECNT() - (tics-MAXTICS));
 		tics = MAXTICS;
 	}
 }
