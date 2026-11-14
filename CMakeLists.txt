@@ -162,6 +162,7 @@ if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
         WOLFSRC/WL_PLAY.C
         WOLFSRC/WL_STATE.C
         WOLFSRC/WL_TEXT.C
+        src/platform/native_input.c
     )
 
     # Uppercase .C is normally treated as C++ by CMake on Unix.
