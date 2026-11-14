@@ -17,6 +17,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "platform.h"
+
 #ifndef far
 #define far
 #endif
@@ -50,6 +52,97 @@ typedef struct {
 } Rect;
 
 #define nil ((void *)0)
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+#ifndef SCREENWIDTH
+#define SCREENWIDTH WOLF_VGA_LEGACY_STRIDE_BYTES
+#endif
+
+static inline char *wolf3d_unsigned_to_base(
+    uint64_t value, char *buffer, unsigned radix, bool negative)
+{
+    char reversed[65];
+    size_t length = 0;
+    size_t output = 0;
+    const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+    if (buffer == NULL || radix < 2 || radix > 36) {
+        return buffer;
+    }
+
+    do {
+        reversed[length++] = digits[value % radix];
+        value /= radix;
+    } while (value != 0 && length < sizeof(reversed));
+
+    if (negative) {
+        buffer[output++] = '-';
+    }
+
+    while (length > 0) {
+        buffer[output++] = reversed[--length];
+    }
+
+    buffer[output] = '\\0';
+    return buffer;
+}
+
+static inline char *wolf3d_itoa(int value, char *buffer, int radix)
+{
+    bool negative = value < 0 && radix == 10;
+    uint64_t magnitude = negative ?
+        (uint64_t)(-(int64_t)value) : (uint64_t)(unsigned)value;
+
+    return wolf3d_unsigned_to_base(
+        magnitude, buffer, (unsigned)radix, negative);
+}
+
+static inline char *wolf3d_ltoa(long value, char *buffer, int radix)
+{
+    bool negative = value < 0 && radix == 10;
+    uint64_t magnitude = negative ?
+        (uint64_t)(-(int64_t)value) : (uint64_t)(unsigned long)value;
+
+    return wolf3d_unsigned_to_base(
+        magnitude, buffer, (unsigned)radix, negative);
+}
+
+static inline char *wolf3d_ultoa(unsigned long value, char *buffer, int radix)
+{
+    return wolf3d_unsigned_to_base(
+        (uint64_t)value, buffer, (unsigned)radix, false);
+}
+
+#define itoa(value, buffer, radix) wolf3d_itoa((value), (buffer), (radix))
+#define ltoa(value, buffer, radix) wolf3d_ltoa((value), (buffer), (radix))
+#define ultoa(value, buffer, radix) wolf3d_ultoa((value), (buffer), (radix))
+
+#define _fstrlen strlen
+#define _fmemcpy memcpy
+#define _fmemset memset
+#define _fmemcmp memcmp
+#define _fstrcpy strcpy
+#define _fstrcat strcat
+#define _fstrcmp strcmp
+
+struct ffblk { int unused; };
+#define FA_ARCH 0x20
+#define findfirst(pattern, result, attributes) \\
+    (wolf_platform_any_file_matches(pattern) ? 0 : -1)
+
+extern int wolf_native_ax;
+extern int wolf_native_bx;
+extern int wolf_native_cx;
+extern int wolf_native_dx;
+void wolf_native_mouse_command(int command);
+#define _AX wolf_native_ax
+#define _BX wolf_native_bx
+#define _CX wolf_native_cx
+#define _DX wolf_native_dx
+#define Mouse(command) wolf_native_mouse_command(command)
 
 extern char signon;
 #define introscn signon
