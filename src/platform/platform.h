@@ -47,6 +47,11 @@ uint64_t wolf_platform_time_ms(void);
 void wolf_platform_delay_ms(uint32_t milliseconds);
 
 /* Legacy mouse-driver command bridge used by the original input code. */
+/* Keyboard state and edge events expressed as original DOS scan codes. */
+bool wolf_platform_key_down(int scan_code);
+bool wolf_platform_take_key_event(int *scan_code);
+int wolf_platform_take_ascii(void);
+
 void wolf_platform_mouse_command(
     int function,
     int *ax,
