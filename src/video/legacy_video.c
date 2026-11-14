@@ -49,6 +49,10 @@ bool wolf_legacy_video_init(
 
     video->draw_page_offset = WOLF_VGA_LEGACY_PAGE1_OFFSET;
     video->display_page_offset = WOLF_VGA_LEGACY_PAGE1_OFFSET;
+    video->delay_callback = NULL;
+    video->delay_userdata = NULL;
+    video->screen_faded = false;
+    video->border_colour = 0;
     memset(video->palette_dac, 0, sizeof(video->palette_dac));
     refresh_rgb_palette(video);
     return true;
@@ -290,7 +294,7 @@ void wolf_legacy_video_fade_out(
             for (index = first_colour; index <= last_colour; ++index) {
                 for (component = 0; component < 3; ++component) {
                     int start = original[index][component];
-                    int delta = (int)target[component] - start;
+                    int64_t delta = (int)target[component] - start;
 
                     working[index][component] =
                         (uint8_t)(start + delta * step / steps);
@@ -342,7 +346,7 @@ void wolf_legacy_video_fade_in(
             for (index = first_colour; index <= last_colour; ++index) {
                 for (component = 0; component < 3; ++component) {
                     int start = original[index][component];
-                    int delta = (int)target[index][component] - start;
+                    int64_t delta = (int)target[index][component] - start;
 
                     working[index][component] =
                         (uint8_t)(start + delta * step / steps);
