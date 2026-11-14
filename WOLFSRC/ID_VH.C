@@ -254,7 +254,7 @@ void VL_MungePic (byte far *source, unsigned width, unsigned height)
 //
 // copy the pic to a temp buffer
 //
-	MM_GetPtr (&(memptr)temp,size);
+	MM_GetPtr ((memptr *)&temp,size);
 	_fmemcpy (temp,source,size);
 
 //
@@ -274,7 +274,7 @@ void VL_MungePic (byte far *source, unsigned width, unsigned height)
 		}
 	}
 
-	MM_FreePtr (&(memptr)temp);
+	MM_FreePtr ((memptr *)&temp);
 }
 
 void VWL_MeasureString (char far *string, word *width, word *height
@@ -426,7 +426,11 @@ void VWB_Vlin (int y1, int y2, int x, int color)
 
 void VW_UpdateScreen (void)
 {
+#ifdef WOLF3D_NATIVE
+    (void)VL_Present();
+#else
 	VH_UpdateScreen ();
+#endif
 }
 
 

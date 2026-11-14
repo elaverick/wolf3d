@@ -151,6 +151,11 @@ extern int _CX;
 extern int _DX;
 void wolf_native_mouse_interrupt(int function);
 
+/* VGA register access has no equivalent in the software framebuffer path. */
+#define VGAMAPMASK(mask) ((void)(mask))
+#define VGAWRITEMODE(mode) ((void)(mode))
+#define VGAREADMAP(plane) ((void)(plane))
+
 /* BIOS services have no equivalent in a windowed native build. */
 #define geninterrupt(interrupt_number) ((void)(interrupt_number))
 #define peek(segment, offset) ((void)(segment), (void)(offset), 0)

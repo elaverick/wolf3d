@@ -197,7 +197,7 @@ long GRFILEPOS(int c)
 void CA_OpenDebug (void)
 {
 	unlink ("DEBUG.TXT");
-	debughandle = open("DEBUG.TXT", O_CREAT | O_WRONLY | O_TEXT);
+	debughandle = open("DEBUG.TXT", O_CREAT | O_WRONLY | O_TEXT, S_IREAD | S_IWRITE);
 }
 
 void CA_CloseDebug (void)
@@ -1257,7 +1257,7 @@ void CA_Startup (void)
 {
 #ifdef PROFILE
 	unlink ("PROFILE.TXT");
-	profilehandle = open("PROFILE.TXT", O_CREAT | O_WRONLY | O_TEXT);
+	profilehandle = open("PROFILE.TXT", O_CREAT | O_WRONLY | O_TEXT, S_IREAD | S_IWRITE);
 #endif
 
 	CAL_SetupMapFile ();
