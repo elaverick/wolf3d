@@ -1,5 +1,6 @@
 #include "legacy_video.h"
 
+#include <limits.h>
 #include <string.h>
 
 static uint8_t clamp_dac_component(int value)
@@ -28,7 +29,7 @@ bool wolf_legacy_video_init(
     size_t framebuffer_storage_size,
     size_t framebuffer_pitch)
 {
-    if (video == NULL || framebuffer_pitch < 320) {
+    if (video == NULL || framebuffer_pitch < 320 || framebuffer_pitch > INT_MAX) {
         return false;
     }
 
