@@ -257,7 +257,7 @@ void MM_SetPurge(memptr *baseptr, int purge)
     }
 
     entry = find_allocation(*baseptr);
-    if (entry == NULL || entry->handle != baseptr) {
+    if (entry == NULL) {
         return;
     }
 
@@ -277,7 +277,7 @@ void MM_SetLock(memptr *baseptr, boolean locked)
     }
 
     entry = find_allocation(*baseptr);
-    if (entry == NULL || entry->handle != baseptr) {
+    if (entry == NULL) {
         return;
     }
 
