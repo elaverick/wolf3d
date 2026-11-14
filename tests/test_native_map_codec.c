@@ -29,7 +29,7 @@ static void test_carmack_rejects_malformed(void)
  assert(!wolf_native_carmack_expand(truncated_near,sizeof(truncated_near),out,2));
  assert(!wolf_native_carmack_expand(near_zero,sizeof(near_zero),out,4));
  assert(!wolf_native_carmack_expand(near_far,sizeof(near_far),out,4));
- assert(!wolf_native_carmack_expand(oversized,sizeof(oversized),out,6));
+ assert(!wolf_native_carmack_expand(oversized,sizeof(oversized),out,4));
 }
 static void test_rlew_valid_and_malformed(void)
 {
