@@ -18,15 +18,11 @@ them.
 
 ## Current implementation
 
-The SDL3 adapter currently provides:
+The SDL3 adapter provides window creation, event pumping, monotonic timing,
+millisecond delays and indexed framebuffer presentation through a streaming
+texture. It scales with nearest-neighbour filtering and letterboxing.
 
-- Window creation and event pumping.
-- Monotonic millisecond timing.
-- Indexed framebuffer presentation through an SDL streaming texture.
-- Nearest-neighbour scaling with letterboxing.
-- A standalone smoke-test executable that does not depend on the legacy game.
-
-The portable video library currently provides:
+The portable video library provides:
 
 - A caller-owned row-major 8-bit indexed framebuffer with clipping-safe pixel,
   line, rectangle and overlapping-copy operations.
@@ -38,7 +34,10 @@ The portable video library currently provides:
   into a linear indexed framebuffer.
 - A C wall-post scaler that reproduces the original 16.16 fixed-point mapping.
 - A game-facing legacy video context that groups the planes, current drawing
-  and display pages, palette and linear presentation buffer.
+  and display pages, palette, fades and linear presentation buffer.
+- A portable `VL_*` compatibility layer for page selection, palette
+  operations, fades, drawing primitives, image/latch copies and tile/latch
+  string drawing.
 
 The VGA memory model is a compatibility layer, not a new renderer. It preserves
 the original planar memory model while removing port I/O, segmented pointers
@@ -59,12 +58,12 @@ The original VGA layout is represented explicitly:
 The image and latch copy functions currently require four-pixel-aligned
 destination X coordinates, matching the original picture and latch drawing
 paths. Pixel, line and rectangle operations accept pixel-aligned coordinates.
+The CRTC split-screen operation remains a compatibility stub; it will need a
+software equivalent if the game uses that path in the native build.
 
-The intended presentation sequence is:
-
-1. Draw into the current software VGA page through the legacy video context.
-2. Convert the selected display page to its 320x200 indexed framebuffer.
-3. Submit that framebuffer and its expanded RGB palette to the platform API.
+The SDL smoke executable now exercises the portable `VL_*` API through the
+platform callback. It is an end-to-end video-path test, separate from the
+original game loop.
 
 ## Build
 
@@ -90,15 +89,17 @@ ctest --test-dir build -C Release --output-on-failure
 
 GitHub Actions runs Release builds and CTest on Ubuntu and Windows, treating
 compiler warnings as errors. The Ubuntu job also runs an AddressSanitizer and
-UndefinedBehaviorSanitizer build. Tests cover framebuffer bounds and clipping,
-overlapping copies, image layout conversion, VGA plane addressing, original
-page offsets, latch copies, palette expansion, wall-post scaling against the
-original fixed-point algorithm, and the legacy video context.
+UndefinedBehaviorSanitizer build. The Windows job installs SDL3 with vcpkg and
+builds the SDL platform and end-to-end smoke executable. Tests cover framebuffer
+bounds and clipping, overlapping copies, image layout conversion, VGA plane
+addressing, original page offsets, latch copies, palette expansion, wall-post
+scaling against the original fixed-point algorithm, palette fades and the
+legacy `VL_*` compatibility API.
 
 ## Next steps
 
-1. Connect the legacy video context to a drop-in replacement for the original
-   `VL_*` API and remove the DOS-specific implementation from the native build.
+1. Complete the remaining legacy video behaviours and route the native engine
+   headers/build to `legacy_vl.c` instead of the DOS-specific `ID_VL.C`.
 2. Translate sprite scaling and remaining assembly drawing routines into
    readable C, preserving their original pixel output.
 3. Connect the selected display page and palette to SDL3 presentation in the
