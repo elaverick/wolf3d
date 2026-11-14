@@ -153,7 +153,7 @@ static void test_game_clock_uses_external_timer_ticks(void)
     unsigned index;
 
     SD_Shutdown();
-    TimeCount = 0;
+    WOLF_SET_TIMECNT(0);
     SD_TimerTick();
     assert(TimeCount == 0);
 
