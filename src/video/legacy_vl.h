@@ -77,6 +77,7 @@ void VL_SizeTile8String(const char *text, int *width, int *height);
 void VL_TestPaletteSet(void);
 
 /* Native presentation accessors; the host submits these to wolf_platform. */
+WolfLegacyVideo *VL_GetVideo(void);
 bool VL_Present(void);
 const WolfFramebuffer *VL_GetFramebuffer(void);
 const uint8_t (*VL_GetRGBPalette(void))[3];
