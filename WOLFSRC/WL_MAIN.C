@@ -1,6 +1,8 @@
 // WL_MAIN.C
 
+#ifndef WOLF3D_NATIVE
 #include <conio.h>
+#endif
 #include "WL_DEF.H"
 #pragma hdrstop
 
@@ -240,6 +242,9 @@ void WriteConfig(void)
 char    *JHParmStrings[] = {"no386",nil};
 void Patch386 (void)
 {
+#ifdef WOLF3D_NATIVE
+    IsA386 = false;
+#else
 extern void far jabhack2(void);
 extern int far  CheckIs386(void);
 
@@ -259,6 +264,7 @@ extern int far  CheckIs386(void);
 	}
 	else
 		IsA386 = false;
+#endif
 }
 
 //===========================================================================
@@ -1154,7 +1160,9 @@ void InitGame (void)
 
 	MM_Startup ();                  // so the signon screen can be freed
 
+	#ifndef WOLF3D_NATIVE
 	SignonScreen ();
+	#endif
 
 	VW_Startup ();
 	IN_Startup ();
@@ -1165,6 +1173,7 @@ void InitGame (void)
 	US_Startup ();
 
 
+#ifndef WOLF3D_NATIVE
 #ifndef SPEAR
 	if (mminfo.mainmem < 235000L)
 #else
@@ -1180,6 +1189,7 @@ void InitGame (void)
 		gotoxy (1,23);
 		exit(1);
 	}
+#endif
 
 
 //
@@ -1583,7 +1593,7 @@ void    DemoLoop (void)
 
 char    *nosprtxt[] = {"nospr",nil};
 
-void main (void)
+void WolfMain (void)
 {
 	int     i;
 
