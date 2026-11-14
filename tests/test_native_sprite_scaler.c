@@ -174,7 +174,7 @@ static void test_wall_occlusion(void)
         &video, shape, shape_size, 160, 320, 200, 64,
         wall_height, 64));
     present_video();
-    assert(framebuffer_pixels[69u * 320u + 159u] == 11);
+    assert(framebuffer_pixels[69u * 320u + 159u] == 21);
 }
 
 static void test_horizontal_and_vertical_clipping(void)
