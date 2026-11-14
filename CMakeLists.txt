@@ -22,9 +22,9 @@ target_include_directories(wolf3d_video
 )
 
 if(MSVC)
-    target_compile_options(wolf3d_video PRIVATE /W4)
+    target_compile_options(wolf3d_video PRIVATE /W4 /WX)
 else()
-    target_compile_options(wolf3d_video PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(wolf3d_video PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
 if(BUILD_TESTING)
@@ -38,9 +38,9 @@ if(BUILD_TESTING)
     )
 
     if(MSVC)
-        target_compile_options(test_indexed_framebuffer PRIVATE /W4)
+        target_compile_options(test_indexed_framebuffer PRIVATE /W4 /WX)
     else()
-        target_compile_options(test_indexed_framebuffer PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(test_indexed_framebuffer PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
 
     add_test(NAME indexed_framebuffer COMMAND test_indexed_framebuffer)
@@ -55,9 +55,9 @@ if(BUILD_TESTING)
     )
 
     if(MSVC)
-        target_compile_options(test_vga_memory PRIVATE /W4)
+        target_compile_options(test_vga_memory PRIVATE /W4 /WX)
     else()
-        target_compile_options(test_vga_memory PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(test_vga_memory PRIVATE -Wall -Wextra -Wpedantic -Werror)
     endif()
 
     add_test(NAME vga_memory COMMAND test_vga_memory)
@@ -85,6 +85,12 @@ if(WOLF3D_BUILD_SDL3_PLATFORM)
             PRIVATE
                 SDL_MAIN_HANDLED
         )
+
+        if(MSVC)
+            target_compile_options(wolf3d_platform PRIVATE /W4 /WX)
+        else()
+            target_compile_options(wolf3d_platform PRIVATE -Wall -Wextra -Wpedantic -Werror)
+        endif()
 
         if(WOLF3D_BUILD_PLATFORM_SMOKE_TEST)
             add_executable(wolf3d_platform_smoke
