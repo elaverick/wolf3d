@@ -28,9 +28,13 @@
 */
 
 
+#ifdef WOLF3D_NATIVE
+#define COLORBORDER(color) VL_ColorBorder(color)
+#else
 #define COLORBORDER(color)		asm{mov	dx,STATUS_REGISTER_1;in al,dx;\
 	mov dx,ATR_INDEX;mov al,ATR_OVERSCAN;out dx,al;mov al,color;out	dx,al;\
 	mov	al,32;out dx,al};
+#endif
 
 #define MAPSPOT(x,y,plane)		(*(mapsegs[plane]+farmapylookup[y]+x))
 
@@ -74,7 +78,11 @@
 #define PLAYERSPEED		3000
 #define RUNSPEED   		6000
 
-#define	SCREENSEG		0xa000
+#ifdef WOLF3D_NATIVE
+#define SCREENSEG 0
+#else
+#define SCREENSEG 0xa000
+#endif
 
 #define SCREENBWIDE		80
 
