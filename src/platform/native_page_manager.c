@@ -145,7 +145,6 @@ void PM_Startup(void)
     char filename[64];
     size_t base_length;
     size_t extension_length;
-    size_t index;
 
     if (page_manager_started) {
         return;
@@ -279,11 +278,17 @@ memptr PM_GetPage(int pagenum)
         Quit("Native page manager: attempted to load a sparse page");
         return NULL;
     }
-    if (page->length > PMPageSize || page->offset > LONG_MAX) {
+    if (page->length > PMPageSize) {
         Quit("Native page manager: page metadata outside supported limits");
         return NULL;
     }
 
+#if LONG_MAX < UINT32_MAX
+    if (page->offset > (uint32_t)LONG_MAX) {
+        Quit("Native page manager: page offset exceeds file API limits");
+        return NULL;
+    }
+#endif
     offset = (long)page->offset;
     if (lseek(page_file, offset, SEEK_SET) != offset) {
         Quit("Native page manager: VSWAP seek failed");
