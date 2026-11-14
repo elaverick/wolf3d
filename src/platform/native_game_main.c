@@ -67,7 +67,7 @@ static void print_usage(const char *program)
     fprintf(stdout,
         "Usage: %s [--data-dir DIRECTORY]\n"
         "Run using original Wolfenstein 3-D game data in DIRECTORY.\n"
-        "The directory must contain the matching WL6/WL1/SOD data files.\n",
+        "The directory must contain matching WL6, WL3, or WL1 game data files.\n",
         program);
 }
 
