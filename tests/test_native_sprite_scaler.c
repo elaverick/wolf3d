@@ -1,3 +1,7 @@
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #include "native_sprite_scaler.h"
 
 #include <assert.h>
