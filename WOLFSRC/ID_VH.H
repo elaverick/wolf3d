@@ -106,7 +106,7 @@ void VWB_Vlin (int y1, int y2, int x, int color);
 //
 // wolfenstein EGA compatability stuff
 //
-extern byte far gamepal;
+extern byte far gamepal[768];
 
 void VH_SetDefaultColors (void);
 
