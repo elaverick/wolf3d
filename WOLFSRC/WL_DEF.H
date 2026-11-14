@@ -485,7 +485,11 @@ enum	{
 =============================================================================
 */
 
+#ifdef WOLF3D_NATIVE
+typedef int32_t fixed;
+#else
 typedef long fixed;
+#endif
 
 typedef enum {
 	di_north,
@@ -797,7 +801,7 @@ extern	fixed 		far sintable[],far *costable;
 // derived constants
 //
 extern	fixed 	scale,maxslope;
-extern	long	heightnumerator;
+extern	fixed	heightnumerator;
 extern	int		minheightdiv;
 
 extern	char	configname[13];
@@ -995,7 +999,7 @@ extern	fixed 		far sintable[],far *costable;
 // derived constants
 //
 extern	fixed 	scale;
-extern	long	heightnumerator,mindist;
+extern	fixed	heightnumerator,mindist;
 
 //
 // refresh variables
