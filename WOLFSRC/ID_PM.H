@@ -81,3 +81,6 @@ extern	memptr	PM_GetPageAddress(int pagenum),
 				PM_GetPage(int pagenum);		// Use this one to cache page
 
 void PM_SetMainMemPurge(int level);
+#ifdef WOLF3D_NATIVE
+void PM_Purge(void);
+#endif
