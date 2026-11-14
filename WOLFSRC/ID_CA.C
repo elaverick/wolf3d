@@ -1731,8 +1731,81 @@ void CA_CacheScreen (int chunk)
 ======================
 */
 
+#ifdef WOLF3D_NATIVE
+static boolean native_decode_map_plane(int mapnum, int plane)
+{
+    int32_t file_offset;
+    uint16_t compressed_length;
+    long file_size;
+    uint64_t file_end;
+    uint8_t *compressed_data;
+    boolean decoded;
+
+    if (mapnum < 0 || mapnum >= NUMMAPS ||
+        plane < 0 || plane >= MAPPLANES ||
+        mapheaderseg[mapnum] == NULL || mapsegs[plane] == NULL ||
+        maphandle < 0 || tinf == NULL) {
+        return false;
+    }
+
+    file_offset = mapheaderseg[mapnum]->planestart[plane];
+    compressed_length = mapheaderseg[mapnum]->planelength[plane];
+    file_size = filelength(maphandle);
+    if (file_offset < 0 || compressed_length < sizeof(word) ||
+        file_size < 0) {
+        return false;
+    }
+
+    file_end = (uint64_t)(uint32_t)file_offset + compressed_length;
+    if (file_end > (uint64_t)file_size ||
+        lseek(maphandle, (long)file_offset, SEEK_SET) != (long)file_offset) {
+        return false;
+    }
+
+    compressed_data = (uint8_t *)malloc(compressed_length);
+    if (compressed_data == NULL) {
+        return false;
+    }
+    if (!CA_FarRead(maphandle, compressed_data, (long)compressed_length)) {
+        free(compressed_data);
+        return false;
+    }
+
+#ifdef CARMACIZED
+    decoded = wolf_native_map_decode_plane(
+        compressed_data, compressed_length, (unsigned *)mapsegs[plane],
+        64u * 64u, ((mapfiletype _seg *)tinf)->RLEWtag, true);
+#else
+    decoded = wolf_native_map_decode_plane(
+        compressed_data, compressed_length, (unsigned *)mapsegs[plane],
+        64u * 64u, ((mapfiletype _seg *)tinf)->RLEWtag, false);
+#endif
+
+    free(compressed_data);
+    return decoded;
+}
+#endif
+
 void CA_CacheMap (int mapnum)
 {
+#ifdef WOLF3D_NATIVE
+    int plane;
+
+    if (mapnum < 0 || mapnum >= NUMMAPS ||
+        mapheaderseg[mapnum] == NULL || tinf == NULL) {
+        Quit("CA_CacheMap: invalid map index or missing map header");
+        return;
+    }
+
+    mapon = mapnum;
+    for (plane = 0; plane < MAPPLANES; ++plane) {
+        if (!native_decode_map_plane(mapnum, plane)) {
+            Quit("CA_CacheMap: invalid or truncated map plane");
+            return;
+        }
+    }
+#else
+
 	long	pos,compressed;
 	int		plane;
 	memptr	*dest,bigbufferseg;
@@ -1833,6 +1906,8 @@ void CA_CacheMap (int mapnum)
 		if (compressed>BUFFERSIZE)
 			MM_FreePtr(&bigbufferseg);
 	}
+
+#endif
 }
 
 //===========================================================================
