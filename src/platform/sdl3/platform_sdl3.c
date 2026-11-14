@@ -9,6 +9,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -65,6 +66,12 @@ WolfPlatform *wolf_platform_create(const WolfPlatformConfig *config)
         if (config->framebuffer_height > 0) {
             framebuffer_height = config->framebuffer_height;
         }
+    }
+
+    if (framebuffer_width > INT_MAX / (int)sizeof(uint32_t) ||
+        (size_t)framebuffer_width >
+            SIZE_MAX / (size_t)framebuffer_height / sizeof(uint32_t)) {
+        return NULL;
     }
 
     platform = calloc(1, sizeof(*platform));
@@ -190,7 +197,10 @@ bool wolf_platform_present_indexed(
         return false;
     }
 
-    SDL_RenderPresent(platform->renderer);
+    if (!SDL_RenderPresent(platform->renderer)) {
+        return false;
+    }
+
     return true;
 }
 
