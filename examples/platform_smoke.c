@@ -1,73 +1,119 @@
 /*
- * Small interactive test for the SDL3 indexed-framebuffer presentation path.
+ * End-to-end smoke test for the software VGA and SDL3 presentation path.
  *
- * This is intentionally separate from the game. It verifies that the native
- * window, indexed-to-RGBA conversion and texture presentation work before the
- * original engine is connected.
+ * This intentionally exercises the same legacy video context that the game
+ * will use, without depending on the still-unported game loop.
  */
 
+#include "legacy_video.h"
 #include "platform.h"
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <string.h>
 
-#define FRAME_WIDTH 320
-#define FRAME_HEIGHT 200
+static uint8_t vga_storage[
+    WOLF_VGA_LEGACY_PLANE_SIZE * WOLF_VGA_PLANE_COUNT];
+static uint8_t framebuffer_storage[320 * 200];
+
+static bool present_to_platform(
+    const uint8_t *pixels,
+    int pitch,
+    const uint8_t palette[256][3],
+    void *userdata)
+{
+    WolfPlatform *platform = userdata;
+
+    return wolf_platform_present_indexed(
+        platform, pixels, pitch, palette);
+}
+
+static void draw_test_scene(WolfLegacyVideo *video)
+{
+    uint8_t wall_column[64];
+    int index;
+
+    for (index = 0; index < 256; ++index) {
+        wolf_legacy_video_set_color(
+            video,
+            index,
+            index & 63,
+            (index * 3) & 63,
+            (index * 5) & 63);
+    }
+
+    wolf_legacy_video_clear(video, 0);
+    wolf_legacy_video_fill_rect(video, 0, 0, 320, 200, 4);
+    wolf_legacy_video_fill_rect(video, 16, 16, 288, 168, 12);
+    wolf_legacy_video_fill_rect(video, 32, 32, 256, 136, 3);
+    wolf_legacy_video_fill_rect(video, 40, 40, 240, 120, 7);
+
+    for (index = 0; index < 64; ++index) {
+        wall_column[index] = (uint8_t)(32 + ((index * 3) & 31));
+    }
+
+    wolf_legacy_video_scale_post(
+        video,
+        136,
+        0,
+        200,
+        48,
+        wall_column,
+        sizeof(wall_column),
+        64,
+        144);
+
+    wolf_legacy_video_fill_rect(video, 24, 176, 272, 8, 63);
+}
 
 int main(void)
 {
     WolfPlatformConfig config = {
-        "Wolfenstein 3D - platform smoke test",
+        "Wolfenstein 3D - native video smoke test",
         960,
         600,
-        FRAME_WIDTH,
-        FRAME_HEIGHT
+        320,
+        200
     };
     WolfPlatform *platform;
-    uint8_t *framebuffer;
-    uint8_t palette[256][3];
-    int x;
-    int y;
-    int running = 1;
-
-    framebuffer = malloc(FRAME_WIDTH * FRAME_HEIGHT);
-    if (framebuffer == NULL) {
-        fputs("Unable to allocate smoke-test framebuffer.\n", stderr);
-        return EXIT_FAILURE;
-    }
-
-    for (x = 0; x < 256; ++x) {
-        palette[x][0] = (uint8_t)x;
-        palette[x][1] = (uint8_t)(255 - x);
-        palette[x][2] = (uint8_t)((x * 3) & 255);
-    }
-
-    for (y = 0; y < FRAME_HEIGHT; ++y) {
-        for (x = 0; x < FRAME_WIDTH; ++x) {
-            framebuffer[y * FRAME_WIDTH + x] =
-                (uint8_t)(((x / 8) + (y / 8) * 3) & 255);
-        }
-    }
+    WolfLegacyVideo video;
 
     platform = wolf_platform_create(&config);
     if (platform == NULL) {
         fputs("Unable to initialise SDL3 platform.\n", stderr);
-        free(framebuffer);
-        return EXIT_FAILURE;
+        return 1;
     }
 
-    while (running) {
-        running = wolf_platform_pump_events(platform);
+    if (!wolf_legacy_video_init(
+            &video,
+            vga_storage,
+            sizeof(vga_storage),
+            framebuffer_storage,
+            sizeof(framebuffer_storage),
+            320)) {
+        fputs("Unable to initialise software VGA memory.\n", stderr);
+        wolf_platform_destroy(platform);
+        return 1;
+    }
 
-        if (running && !wolf_platform_present_indexed(
-                platform, framebuffer, FRAME_WIDTH, palette)) {
-            fputs("Unable to present indexed framebuffer.\n", stderr);
-            running = 0;
+    wolf_legacy_video_set_present_callback(
+        &video, present_to_platform, platform);
+    wolf_legacy_video_set_draw_page(
+        &video, WOLF_VGA_LEGACY_PAGE1_OFFSET);
+    wolf_legacy_video_set_display_page(
+        &video, WOLF_VGA_LEGACY_PAGE1_OFFSET);
+
+    draw_test_scene(&video);
+
+    while (wolf_platform_pump_events(platform)) {
+        if (!wolf_legacy_video_present(&video)) {
+            fputs("Unable to present software VGA frame.\n", stderr);
+            break;
         }
+
+        wolf_platform_delay_ms(16);
     }
 
     wolf_platform_destroy(platform);
-    free(framebuffer);
-    return EXIT_SUCCESS;
+    return 0;
 }
