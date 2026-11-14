@@ -328,17 +328,18 @@ long DoChecksum(byte far *source,unsigned size,long checksum)
 
 boolean SaveTheGame(int file,int x,int y)
 {
-	struct diskfree_t dfree;
 	long avail,size,checksum;
 	objtype *ob,nullobj;
 
-
-	if (_dos_getdiskfree(0,&dfree))
-	  Quit("Error in _dos_getdiskfree call");
-
-	avail = (long)dfree.avail_clusters *
-			dfree.bytes_per_sector *
-			dfree.sectors_per_cluster;
+#ifdef WOLF3D_NATIVE
+    avail = LONG_MAX;
+#else
+    struct diskfree_t dfree;
+    if (_dos_getdiskfree(0,&dfree))
+      Quit("Error in _dos_getdiskfree call");
+    avail = (long)dfree.avail_clusters *
+        dfree.bytes_per_sector * dfree.sectors_per_cluster;
+#endif
 
 	size = 0;
 	for (ob = player; ob ; ob=ob->next)
@@ -730,6 +731,9 @@ void SetupWalls (void)
 ==========================
 */
 
+#ifdef WOLF3D_NATIVE
+void SignonScreen(void) { }
+#else
 void SignonScreen (void)                        // VGA version
 {
 	unsigned        segstart,seglength;
@@ -759,6 +763,7 @@ void SignonScreen (void)                        // VGA version
 	MML_UseSpace (segstart,seglength);
 }
 
+#endif
 
 /*
 ==========================
@@ -1056,7 +1061,9 @@ void DoJukebox(void)
 			XTOWER2_MUS              // 23
 #endif
 		};
+#ifndef WOLF3D_NATIVE
 	struct dostime_t time;
+#endif
 
 
 
@@ -1069,8 +1076,12 @@ void DoJukebox(void)
 
 #ifndef SPEAR
 #ifndef UPLOAD
+#ifndef WOLF3D_NATIVE
 	_dos_gettime(&time);
 	start = (time.hsecond%3)*6;
+#else
+    start = 0;
+#endif
 #else
 	start = 0;
 #endif
@@ -1353,6 +1364,19 @@ void NewViewSize (int width)
 ==========================
 */
 
+#ifdef WOLF3D_NATIVE
+void Quit(char *error)
+{
+    if (error != NULL && error[0] != '\0') {
+        fprintf(stderr, "%s", error);
+        if (error[strlen(error) - 1] != '\n') fputc('\n', stderr);
+        exit(1);
+    }
+
+    /* Native shutdown is owned by process teardown; no DOS text-mode screen. */
+    exit(0);
+}
+#else
 void Quit (char *error)
 {
 	unsigned        finscreen;
@@ -1403,6 +1427,7 @@ void Quit (char *error)
 
 	exit(0);
 }
+#endif
 
 //===========================================================================
 
@@ -1487,8 +1512,10 @@ void    DemoLoop (void)
 	StartCPMusic(INTROSONG);
 
 #ifndef JAPAN
+#ifndef WOLF3D_NATIVE
 	if (!NoWait)
 		PG13 ();
+#endif
 #endif
 
 #endif

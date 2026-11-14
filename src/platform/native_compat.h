@@ -110,6 +110,7 @@
 #else
 #include <strings.h>
 #define _fstrnicmp strncasecmp
+#define _fstricmp strcasecmp
 #endif
 
 typedef struct ffblk {
