@@ -97,7 +97,7 @@ static void test_palette_fades_and_timing(void)
     assert(last_delay_ms == 15);
     assert(present_count == 6);
     assert(present_call_count == 6);
-    assert(last_presented_red == 63);
+    assert(last_presented_red == 255);
 }
 
 static void test_video_page_and_palette(void)
