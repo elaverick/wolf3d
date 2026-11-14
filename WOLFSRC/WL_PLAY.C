@@ -462,7 +462,7 @@ void PollControls (void)
 //
 	if (demoplayback)
 	{
-		while (TimeCount<lasttimecount+DEMOTICS)
+		while (WOLF_GET_TIMECNT()<lasttimecount+DEMOTICS)
 		;
 		WOLF_SET_TIMECNT(lasttimecount + DEMOTICS);
 		lasttimecount += DEMOTICS;
@@ -473,7 +473,7 @@ void PollControls (void)
 //
 // take DEMOTICS or more tics, and modify Timecount to reflect time taken
 //
-		while (TimeCount<lasttimecount+DEMOTICS)
+		while (WOLF_GET_TIMECNT()<lasttimecount+DEMOTICS)
 		;
 		WOLF_SET_TIMECNT(lasttimecount + DEMOTICS);
 		lasttimecount += DEMOTICS;
@@ -810,7 +810,7 @@ void CheckKeys (void)
 		}
 		if (loadedgame)
 			playstate = ex_abort;
-		lasttimecount = TimeCount;
+		lasttimecount = WOLF_GET_TIMECNT();
 		if (MousePresent)
 			Mouse(MDelta);	// Clear accumulated mouse movement
 		PM_CheckMainMem ();
@@ -828,7 +828,7 @@ void CheckKeys (void)
 		DebugKeys();
 		if (MousePresent)
 			Mouse(MDelta);	// Clear accumulated mouse movement
-		lasttimecount = TimeCount;
+		lasttimecount = WOLF_GET_TIMECNT();
 		return;
 	}
 
@@ -1442,7 +1442,7 @@ void PlayLoop (void)
 		if (singlestep)
 		{
 			VW_WaitVBL(14);
-			lasttimecount = TimeCount;
+			lasttimecount = WOLF_GET_TIMECNT();
 		}
 		if (extravbls)
 			VW_WaitVBL(extravbls);
