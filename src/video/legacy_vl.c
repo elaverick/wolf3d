@@ -201,18 +201,23 @@ void VL_GetColor(int index, int *red, int *green, int *blue)
     wolf_legacy_video_get_color(get_video(), index, red, green, blue);
 }
 
-void VL_SetPalette(const uint8_t palette[256][3])
+void VL_SetPalette(const uint8_t *palette)
 {
     WolfLegacyVideo *video = get_video();
 
     if (video != NULL) {
-        wolf_legacy_video_set_palette(video, palette);
+        wolf_legacy_video_set_palette(
+            video, (const uint8_t (*)[3])palette);
     }
 }
 
-void VL_GetPalette(uint8_t palette[256][3])
+void VL_GetPalette(uint8_t *palette)
 {
-    wolf_legacy_video_get_palette(get_video(), palette);
+    WolfLegacyVideo *video = get_video();
+
+    if (video != NULL && palette != NULL) {
+        memcpy(palette, video->palette_dac, sizeof(video->palette_dac));
+    }
 }
 
 void VL_FadeOut(
@@ -235,14 +240,15 @@ void VL_FadeOut(
 void VL_FadeIn(
     int first_colour,
     int last_colour,
-    const uint8_t palette[256][3],
+    const uint8_t *palette,
     int steps)
 {
     WolfLegacyVideo *video = get_video();
 
     if (video != NULL) {
         wolf_legacy_video_fade_in(
-            video, first_colour, last_colour, palette, steps);
+            video, first_colour, last_colour,
+            (const uint8_t (*)[3])palette, steps);
         screenfaded = video->screen_faded;
     }
 }
@@ -329,7 +335,7 @@ void VL_MaskedToScreen(
 }
 
 void VL_DrawTile8String(
-    const char *text, const uint8_t *tile8_data, int x, int y)
+    const char *text, const char *tile8_data, int x, int y)
 {
     WolfLegacyVideo *video = get_video();
 
@@ -339,7 +345,8 @@ void VL_DrawTile8String(
 
     while (*text != '\0') {
         unsigned character = (unsigned char)*text;
-        const uint8_t *glyph = tile8_data + (size_t)character * 64u;
+        const uint8_t *glyph =
+            (const uint8_t *)tile8_data + (size_t)character * 64u;
 
         (void)wolf_legacy_video_mem_to_screen(
             video, x, y, 8, 8, glyph, 64);
