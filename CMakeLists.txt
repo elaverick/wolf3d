@@ -10,6 +10,7 @@ include(CTest)
 
 option(WOLF3D_BUILD_SDL3_PLATFORM "Build the native SDL3 platform layer" ON)
 option(WOLF3D_BUILD_PLATFORM_SMOKE_TEST "Build the SDL3 framebuffer smoke test" ON)
+option(WOLF3D_BUILD_LEGACY_GAME_OBJECTS "Compile portable original gameplay C sources" OFF)
 
 add_library(wolf3d_video STATIC
     src/video/indexed_framebuffer.c
@@ -116,6 +117,38 @@ if(BUILD_TESTING)
     endif()
 
     add_test(NAME legacy_vl COMMAND test_legacy_vl)
+endif()
+
+if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
+    set(WOLF3D_GAME_SOURCES
+        WOLFSRC/WL_ACT1.C
+        WOLFSRC/WL_ACT2.C
+        WOLFSRC/WL_AGENT.C
+        WOLFSRC/WL_GAME.C
+        WOLFSRC/WL_INTER.C
+        WOLFSRC/WL_MENU.C
+        WOLFSRC/WL_PLAY.C
+        WOLFSRC/WL_STATE.C
+        WOLFSRC/WL_TEXT.C
+    )
+
+    # Uppercase .C is normally treated as C++ by CMake on Unix.
+    set_source_files_properties(${WOLF3D_GAME_SOURCES} PROPERTIES LANGUAGE C)
+
+    add_library(wolf3d_game_objects OBJECT ${WOLF3D_GAME_SOURCES})
+    target_include_directories(wolf3d_game_objects
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/WOLFSRC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/video
+    )
+    target_compile_definitions(wolf3d_game_objects PRIVATE WOLF3D_NATIVE)
+    target_link_libraries(wolf3d_game_objects PRIVATE wolf3d_legacy_vl)
+
+    if(MSVC)
+        target_compile_options(wolf3d_game_objects PRIVATE /W4)
+    else()
+        target_compile_options(wolf3d_game_objects PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
 endif()
 
 if(WOLF3D_BUILD_SDL3_PLATFORM)
