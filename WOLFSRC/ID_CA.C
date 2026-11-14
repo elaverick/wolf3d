@@ -140,8 +140,11 @@ SDMode		oldsoundmode;
 
 
 
-void	CAL_CarmackExpand (unsigned far *source, unsigned far *dest,
-		unsigned length);
+#ifdef WOLF3D_NATIVE
+void CAL_CarmackExpand (word far *source, word far *dest, unsigned length);
+#else
+void CAL_CarmackExpand (unsigned far *source, unsigned far *dest, unsigned length);
+#endif
 
 
 #ifdef THREEBYTEGRSTARTS
@@ -457,6 +460,47 @@ void CAL_OptimizeNodes (huffnode *table)
 ======================
 */
 
+#ifdef WOLF3D_NATIVE
+void CAL_HuffExpand (byte huge *source, byte huge *dest,
+    long length, huffnode *hufftable, boolean screenhack)
+{
+    size_t output_length;
+    size_t output_index = 0;
+    unsigned node_index = 254;
+    unsigned bit_index = 0;
+
+    (void)screenhack;
+    if (source == NULL || dest == NULL || hufftable == NULL || length < 0) {
+        Quit("CAL_HuffExpand: invalid native arguments");
+        return;
+    }
+    output_length = (size_t)length;
+
+    while (output_index < output_length) {
+        unsigned encoded;
+        if (bit_index == 8) {
+            ++source;
+            bit_index = 0;
+        }
+
+        encoded = (source[0] & (byte)(1u << bit_index)) != 0
+            ? hufftable[node_index].bit1
+            : hufftable[node_index].bit0;
+        ++bit_index;
+
+        if (encoded < 256u) {
+            dest[output_index++] = (byte)encoded;
+            node_index = 254;
+        } else {
+            node_index = encoded - 256u;
+            if (node_index >= 255u) {
+                Quit("CAL_HuffExpand: invalid Huffman node");
+                return;
+            }
+        }
+    }
+}
+#else
 void CAL_HuffExpand (byte huge *source, byte huge *dest,
   long length,huffnode *hufftable, boolean screenhack)
 {
@@ -633,7 +677,7 @@ asm	mov	ax,ss
 asm	mov	ds,ax
 
 }
-
+#endif
 
 /*
 ======================
@@ -648,6 +692,61 @@ asm	mov	ds,ax
 #define NEARTAG	0xa7
 #define FARTAG	0xa8
 
+#ifdef WOLF3D_NATIVE
+void CAL_CarmackExpand (word far *source, word far *dest, unsigned length)
+{
+    const byte *input = (const byte *)source;
+    size_t output_words = (size_t)length / 2u;
+    size_t produced = 0;
+
+    while (produced < output_words) {
+        uint16_t value = (uint16_t)input[0] | ((uint16_t)input[1] << 8);
+        unsigned tag = value >> 8;
+        unsigned count = value & 0xffu;
+        input += 2;
+
+        if (tag == NEARTAG || tag == FARTAG) {
+            if (count == 0) {
+                dest[produced++] = (word)((tag << 8) | input[0]);
+                ++input;
+                continue;
+            }
+            if (produced + count > output_words) {
+                Quit("CAL_CarmackExpand: run exceeds destination");
+                return;
+            }
+            if (tag == NEARTAG) {
+                size_t offset = input[0];
+                size_t copy_index;
+                ++input;
+                if (offset == 0 || offset > produced) {
+                    Quit("CAL_CarmackExpand: invalid near offset");
+                    return;
+                }
+                copy_index = produced - offset;
+                while (count-- != 0)
+                    dest[produced++] = dest[copy_index++];
+            } else {
+                size_t copy_index = (size_t)input[0] | ((size_t)input[1] << 8);
+                input += 2;
+                if (copy_index >= produced) {
+                    Quit("CAL_CarmackExpand: invalid far offset");
+                    return;
+                }
+                while (count-- != 0) {
+                    if (copy_index >= produced) {
+                        Quit("CAL_CarmackExpand: far copy outside output");
+                        return;
+                    }
+                    dest[produced++] = dest[copy_index++];
+                }
+            }
+        } else {
+            dest[produced++] = value;
+        }
+    }
+}
+#else
 void CAL_CarmackExpand (unsigned far *source, unsigned far *dest, unsigned length)
 {
 	unsigned	ch,chhigh,count,offset;
@@ -705,8 +804,7 @@ void CAL_CarmackExpand (unsigned far *source, unsigned far *dest, unsigned lengt
 		}
 	}
 }
-
-
+#endif
 
 /*
 ======================
@@ -773,6 +871,35 @@ long CA_RLEWCompress (unsigned huge *source, long length, unsigned huge *dest,
 ======================
 */
 
+#ifdef WOLF3D_NATIVE
+void CA_RLEWexpand (word huge *source, word huge *dest, long length, word rlewtag)
+{
+    size_t output_words;
+    size_t produced = 0;
+    const word *input = source;
+
+    if (source == NULL || dest == NULL || length < 0 || (length & 1) != 0) {
+        Quit("CA_RLEWexpand: invalid native arguments");
+        return;
+    }
+    output_words = (size_t)length / sizeof(word);
+    while (produced < output_words) {
+        word value = *input++;
+        if (value == rlewtag) {
+            word count = *input++;
+            value = *input++;
+            if (count == 0 || produced + count > output_words) {
+                Quit("CA_RLEWexpand: invalid run length");
+                return;
+            }
+            while (count-- != 0)
+                dest[produced++] = value;
+        } else {
+            dest[produced++] = value;
+        }
+    }
+}
+#else
 void CA_RLEWexpand (unsigned huge *source, unsigned huge *dest,long length,
   unsigned rlewtag)
 {
@@ -1131,7 +1258,13 @@ void CA_Startup (void)
 
 	CAL_SetupMapFile ();
 	CAL_SetupGrFile ();
-	CAL_SetupAudioFile ();
+#ifndef WOLF3D_NATIVE
+    CAL_SetupAudioFile ();
+#else
+    /* SDL audio integration is not part of this milestone. */
+    audiohandle = -1;
+    audiostarts = NULL;
+#endif
 
 	mapon = -1;
 	ca_levelbit = 1;
@@ -1158,9 +1291,9 @@ void CA_Shutdown (void)
 	close (profilehandle);
 #endif
 
-	close (maphandle);
-	close (grhandle);
-	close (audiohandle);
+    if (maphandle >= 0) close(maphandle);
+    if (grhandle >= 0) close(grhandle);
+    if (audiohandle >= 0) close(audiohandle);
 }
 
 //===========================================================================
@@ -1182,6 +1315,8 @@ void CA_CacheAudioChunk (int chunk)
 	byte	far *source;
 #endif
 
+    if (audiohandle < 0 || audiostarts == NULL)
+        return;
 	if (audiosegs[chunk])
 	{
 		MM_SetPurge (&(memptr)audiosegs[chunk],0);
@@ -1332,8 +1467,15 @@ void CAL_ExpandGrChunk (int chunk, byte far *source)
 	//
 	// everything else has an explicit size longword
 	//
-		expanded = *(long far *)source;
-		source += 4;			// skip over length
+#ifdef WOLF3D_NATIVE
+        expanded = (long)((uint32_t)source[0] |
+            ((uint32_t)source[1] << 8) |
+            ((uint32_t)source[2] << 16) |
+            ((uint32_t)source[3] << 24));
+#else
+        expanded = *(long far *)source;
+#endif
+        source += 4;
 	}
 
 //
@@ -1420,6 +1562,59 @@ void CA_CacheGrChunk (int chunk)
 ======================
 */
 
+#ifdef WOLF3D_NATIVE
+void CA_CacheScreen (int chunk)
+{
+    long pos, compressed, expanded;
+    memptr compressed_buffer = NULL;
+    memptr decoded_buffer = NULL;
+    byte *source;
+    int next;
+
+    pos = GRFILEPOS(chunk);
+    next = chunk + 1;
+    while (GRFILEPOS(next) == -1)
+        ++next;
+    compressed = GRFILEPOS(next) - pos;
+
+    if (pos < 0 || compressed <= 4 || lseek(grhandle, pos, SEEK_SET) != pos)
+        Quit("CA_CacheScreen: invalid graphics chunk range");
+
+    MM_GetPtr(&compressed_buffer, (unsigned long)compressed);
+    if (mmerror) return;
+    MM_SetLock(&compressed_buffer, true);
+    if (!CA_FarRead(grhandle, (byte *)compressed_buffer, compressed)) {
+        MM_FreePtr(&compressed_buffer);
+        Quit("CA_CacheScreen: graphics read failed");
+        return;
+    }
+
+    source = (byte *)compressed_buffer;
+    expanded = (long)((uint32_t)source[0] |
+        ((uint32_t)source[1] << 8) |
+        ((uint32_t)source[2] << 16) |
+        ((uint32_t)source[3] << 24));
+    source += 4;
+
+    MM_GetPtr(&decoded_buffer, (unsigned long)expanded);
+    if (mmerror) {
+        MM_FreePtr(&compressed_buffer);
+        return;
+    }
+    CAL_HuffExpand(source, (byte *)decoded_buffer, expanded, grhuffman, false);
+    if (expanded < (long)(320u * 200u) ||
+        !VL_MemToScreen((byte *)decoded_buffer, 320, 200, 0, 0)) {
+        MM_FreePtr(&decoded_buffer);
+        MM_FreePtr(&compressed_buffer);
+        Quit("CA_CacheScreen: decoded screen is not 320x200 planar data");
+        return;
+    }
+
+    VW_MarkUpdateBlock(0, 0, 319, 199);
+    MM_FreePtr(&decoded_buffer);
+    MM_FreePtr(&compressed_buffer);
+}
+#else
 void CA_CacheScreen (int chunk)
 {
 	long	pos,compressed,expanded;
@@ -1454,6 +1649,7 @@ void CA_CacheScreen (int chunk)
 	VW_MarkUpdateBlock (0,0,319,199);
 	MM_FreePtr(&bigbufferseg);
 }
+#endif
 
 //==========================================================================
 
@@ -1473,7 +1669,11 @@ void CA_CacheMap (int mapnum)
 	int		plane;
 	memptr	*dest,bigbufferseg;
 	unsigned	size;
-	unsigned	far	*source;
+#ifdef WOLF3D_NATIVE
+    word *source;
+#else
+    unsigned far *source;
+#endif
 #ifdef CARMACIZED
 	memptr	buffer2seg;
 	long	expanded;
@@ -1515,7 +1715,7 @@ void CA_CacheMap (int mapnum)
 		source++;
 		MM_GetPtr (&buffer2seg,expanded);
 		CAL_CarmackExpand (source, (unsigned far *)buffer2seg,expanded);
-		CA_RLEWexpand (((unsigned far *)buffer2seg)+1,*dest,size,
+		CA_RLEWexpand (((word *)buffer2seg)+1,(word *)*dest,size,
 		((mapfiletype _seg *)tinf)->RLEWtag);
 		MM_FreePtr (&buffer2seg);
 
@@ -1807,4 +2007,6 @@ void CA_CannotOpen(char *string)
  strcat(str,string);
  strcat(str,"!\n");
  Quit (str);
+#endif
+
 }
