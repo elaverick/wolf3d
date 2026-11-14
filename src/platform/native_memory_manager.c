@@ -61,7 +61,8 @@ static boolean register_allocation(
     }
 
     entry->address = address;
-    entry->handle = handle;
+    /* Only purgeable allocations retain a handle to a caller-owned pointer slot. */
+    entry->handle = NULL;
     entry->size = size;
     entry->last_touched = ++allocation_clock;
     entry->purge_level = 0;
@@ -175,9 +176,6 @@ void MM_Shutdown(void)
     while (entry != NULL) {
         NativeAllocation *next = entry->next;
 
-        if (entry->handle != NULL && *entry->handle == entry->address) {
-            *entry->handle = NULL;
-        }
         free(entry->address);
         free(entry);
         entry = next;
@@ -266,6 +264,7 @@ void MM_SetPurge(memptr *baseptr, int purge)
     if (purge < 0) purge = 0;
     if (purge > 3) purge = 3;
     entry->purge_level = (unsigned)purge;
+    entry->handle = purge > 0 ? baseptr : NULL;
     entry->last_touched = ++allocation_clock;
 }
 
