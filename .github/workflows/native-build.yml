@@ -47,6 +47,7 @@ jobs:
           cmake -S . -B build-sdl
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
           -DVCPKG_TARGET_TRIPLET=x64-windows
+          -DWOLF3D_BUILD_LEGACY_GAME_OBJECTS=ON
           -DCMAKE_BUILD_TYPE=Release
 
       - name: Build SDL3 platform and smoke test
@@ -56,6 +57,17 @@ jobs:
       - name: Run SDL3 smoke test headlessly
         if: runner.os == 'Windows'
         run: ctest --test-dir build-sdl -C Release -R platform_smoke --output-on-failure
+
+      - name: Verify native game startup without game data
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:SDL_VIDEODRIVER = 'dummy'
+          $output = & '.\build-sdl\Release\wolf3d_native.exe' 2>&1
+          $exitCode = $LASTEXITCODE
+          $message = $output -join "`n"
+          if ($exitCode -ne 1) { throw "Expected missing-data exit code 1, received $exitCode. Output: $message" }
+          if ($message -notmatch 'NO WOLFENSTEIN 3-D DATA FILES') { throw "Game did not reach the expected resource check. Output: $message" }
 
       - name: Configure original gameplay C sources
         run: >-
