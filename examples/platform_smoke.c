@@ -152,12 +152,53 @@ int main(int argc, char **argv)
     }
 
     /*
-     * Exercise a window-manager close request directly. SDL may also emit a
-     * global quit event depending on SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE, but
-     * the host must handle the per-window request on its own.
+     * Exercise the real SDL event translation used by the menus and game.
+     * These events are pushed directly so the test also works headlessly.
      */
     {
+        SDL_Event key_event = { 0 };
+        SDL_Event focus_event = { 0 };
+        SDL_Event text_event = { 0 };
         SDL_Event close_event = { 0 };
+
+        key_event.type = SDL_EVENT_KEY_DOWN;
+        key_event.key.scancode = SDL_SCANCODE_W;
+        if (!SDL_PushEvent(&key_event) ||
+            !wolf_platform_pump_events(platform) ||
+            !wolf_platform_key_down(0x11)) {
+            fputs("SDL keyboard input was not translated.\n", stderr);
+            VL_Shutdown();
+            wolf_platform_destroy(platform);
+            return 1;
+        }
+
+        focus_event.type = SDL_EVENT_WINDOW_FOCUS_LOST;
+        if (!SDL_PushEvent(&focus_event) ||
+            !wolf_platform_pump_events(platform) ||
+            wolf_platform_key_down(0x11)) {
+            fputs("SDL focus loss did not clear held keys.\n", stderr);
+            VL_Shutdown();
+            wolf_platform_destroy(platform);
+            return 1;
+        }
+
+        text_event.type = SDL_EVENT_TEXT_INPUT;
+        text_event.text.text[0] = 'A';
+        text_event.text.text[1] = '\\0';
+        if (!SDL_PushEvent(&text_event) ||
+            !wolf_platform_pump_events(platform) ||
+            wolf_platform_take_ascii() != 'A') {
+            fputs("SDL text input was not translated.\n", stderr);
+            VL_Shutdown();
+            wolf_platform_destroy(platform);
+            return 1;
+        }
+
+        /*
+         * SDL normally emits SDL_EVENT_QUIT when the last window closes,
+         * unless SDL_HINT_QUIT_ON_LAST_WINDOW_CLOSE disables that behavior.
+         * The per-window request must be handled independently.
+         */
         close_event.type = SDL_EVENT_WINDOW_CLOSE_REQUESTED;
         if (!SDL_PushEvent(&close_event) ||
             wolf_platform_pump_events(platform)) {
