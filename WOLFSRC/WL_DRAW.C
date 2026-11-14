@@ -1,7 +1,13 @@
 // WL_DRAW.C
 
 #include "WL_DEF.H"
+#ifndef WOLF3D_NATIVE
 #include <DOS.H>
+#else
+#include <limits.h>
+#include <stdint.h>
+#include <string.h>
+#endif
 #pragma hdrstop
 
 //#define DEBUGWALLS
@@ -140,6 +146,9 @@ void AsmRefresh (void);			// in WL_DR_A.ASM
 
 fixed FixedByFrac (fixed a, fixed b)
 {
+#ifdef WOLF3D_NATIVE
+	return (fixed)(((int64_t)a * (int64_t)b) / 65536);
+#else
 //
 // setup
 //
@@ -178,6 +187,7 @@ asm	sbb	dx,0
 
 ansok:;
 
+#endif
 }
 
 #pragma warn +rvl
@@ -252,6 +262,9 @@ void TransformActor (objtype *ob)
 //
 // calculate height (heightnumerator/(nx>>8))
 //
+#ifdef WOLF3D_NATIVE
+	ob->viewheight = (nx >> 8) != 0 ? heightnumerator / (nx >> 8) : 0;
+#else
 	asm	mov	ax,[WORD PTR heightnumerator]
 	asm	mov	dx,[WORD PTR heightnumerator+2]
 	asm	idiv	[WORD PTR nx+1]			// nx>>8
@@ -259,6 +272,7 @@ void TransformActor (objtype *ob)
 	asm	mov	[WORD PTR temp+2],dx
 
 	ob->viewheight = temp;
+#endif
 }
 
 //==========================================================================
@@ -325,6 +339,9 @@ boolean TransformTile (int tx, int ty, int *dispx, int *dispheight)
 //
 // calculate height (heightnumerator/(nx>>8))
 //
+#ifdef WOLF3D_NATIVE
+	*dispheight = (nx >> 8) != 0 ? heightnumerator / (nx >> 8) : 0;
+#else
 	asm	mov	ax,[WORD PTR heightnumerator]
 	asm	mov	dx,[WORD PTR heightnumerator+2]
 	asm	idiv	[WORD PTR nx+1]			// nx>>8
@@ -332,6 +349,7 @@ boolean TransformTile (int tx, int ty, int *dispx, int *dispheight)
 	asm	mov	[WORD PTR temp+2],dx
 
 	*dispheight = temp;
+#endif
 
 //
 // see if it should be grabbed
@@ -377,9 +395,13 @@ int	CalcHeight (void)
 	if (nx<mindist)
 		nx=mindist;			// don't let divide overflow
 
+#ifdef WOLF3D_NATIVE
+	return (nx >> 8) != 0 ? (int)(heightnumerator / (nx >> 8)) : 0;
+#else
 	asm	mov	ax,[WORD PTR heightnumerator]
 	asm	mov	dx,[WORD PTR heightnumerator+2]
 	asm	idiv	[WORD PTR nx+1]			// nx>>8
+#endif
 }
 
 
@@ -393,12 +415,41 @@ int	CalcHeight (void)
 ===================
 */
 
+#ifdef WOLF3D_NATIVE
+byte		*postpage;
+unsigned	posttexture;
+#else
 long		postsource;
+#endif
 unsigned	postx;
 unsigned	postwidth;
 
 void	near ScalePost (void)		// VGA version
 {
+#ifdef WOLF3D_NATIVE
+	WolfLegacyVideo *video = VL_GetVideo();
+	unsigned scaled_height;
+
+	if (video == NULL || postpage == NULL ||
+	    postx >= viewwidth || postwidth == 0 || viewheight <= 0)
+		return;
+
+	scaled_height = wallheight[postx] >> 2;
+	if (scaled_height == 0)
+		return;
+
+	(void)wolf_legacy_video_scale_post(
+		video,
+		(int)postx,
+		0,
+		viewheight,
+		(int)postwidth,
+		postpage + posttexture,
+		64,
+		64,
+		(int)scaled_height);
+#else
+
 	asm	mov	ax,SCREENSEG
 	asm	mov	es,ax
 
@@ -456,6 +507,8 @@ nomore:
 	asm	mov	ax,ss
 	asm	mov	ds,ax
 }
+#endif
+}
 
 void  FarScalePost (void)				// just so other files can call
 {
@@ -500,7 +553,11 @@ void HitVertWall (void)
 		else
 		{
 			ScalePost ();
+#ifdef WOLF3D_NATIVE
+			posttexture = texture;
+#else
 			(unsigned)postsource = texture;
+#endif
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -529,8 +586,18 @@ void HitVertWall (void)
 		else
 			wallpic = vertwall[tilehit];
 
+#ifdef WOLF3D_NATIVE
+		postpage = (byte *)PM_GetPage(wallpic);
+		posttexture = texture;
+#else
+#ifdef WOLF3D_NATIVE
+		postpage = (byte *)PM_GetPage(wallpic);
+		posttexture = texture;
+#else
 		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(wallpic);
 		(unsigned)postsource = texture;
+#endif
+#endif
 
 	}
 }
@@ -572,7 +639,11 @@ void HitHorizWall (void)
 		else
 		{
 			ScalePost ();
+#ifdef WOLF3D_NATIVE
+			posttexture = texture;
+#else
 			(unsigned)postsource = texture;
+#endif
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -601,8 +672,18 @@ void HitHorizWall (void)
 		else
 			wallpic = horizwall[tilehit];
 
+#ifdef WOLF3D_NATIVE
+		postpage = (byte *)PM_GetPage(wallpic);
+		posttexture = texture;
+#else
+#ifdef WOLF3D_NATIVE
+		postpage = (byte *)PM_GetPage(wallpic);
+		posttexture = texture;
+#else
 		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(wallpic);
 		(unsigned)postsource = texture;
+#endif
+#endif
 	}
 
 }
@@ -639,7 +720,11 @@ void HitHorizDoor (void)
 		else
 		{
 			ScalePost ();
+#ifdef WOLF3D_NATIVE
+			posttexture = texture;
+#else
 			(unsigned)postsource = texture;
+#endif
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -670,8 +755,13 @@ void HitHorizDoor (void)
 			break;
 		}
 
+#ifdef WOLF3D_NATIVE
+		postpage = (byte *)PM_GetPage(doorpage);
+		posttexture = texture;
+#else
 		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(doorpage);
 		(unsigned)postsource = texture;
+#endif
 	}
 }
 
@@ -707,7 +797,11 @@ void HitVertDoor (void)
 		else
 		{
 			ScalePost ();
+#ifdef WOLF3D_NATIVE
+			posttexture = texture;
+#else
 			(unsigned)postsource = texture;
+#endif
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -738,8 +832,13 @@ void HitVertDoor (void)
 			break;
 		}
 
+#ifdef WOLF3D_NATIVE
+		postpage = (byte *)PM_GetPage(doorpage+1);
+		posttexture = texture;
+#else
 		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(doorpage+1);
 		(unsigned)postsource = texture;
+#endif
 	}
 }
 
@@ -786,7 +885,11 @@ void HitHorizPWall (void)
 		else
 		{
 			ScalePost ();
+#ifdef WOLF3D_NATIVE
+			posttexture = texture;
+#else
 			(unsigned)postsource = texture;
+#endif
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -803,8 +906,18 @@ void HitHorizPWall (void)
 
 		wallpic = horizwall[tilehit&63];
 
+#ifdef WOLF3D_NATIVE
+		postpage = (byte *)PM_GetPage(wallpic);
+		posttexture = texture;
+#else
+#ifdef WOLF3D_NATIVE
+		postpage = (byte *)PM_GetPage(wallpic);
+		posttexture = texture;
+#else
 		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(wallpic);
 		(unsigned)postsource = texture;
+#endif
+#endif
 	}
 
 }
@@ -850,7 +963,11 @@ void HitVertPWall (void)
 		else
 		{
 			ScalePost ();
+#ifdef WOLF3D_NATIVE
+			posttexture = texture;
+#else
 			(unsigned)postsource = texture;
+#endif
 			postwidth = 1;
 			postx = pixx;
 		}
@@ -867,8 +984,18 @@ void HitVertPWall (void)
 
 		wallpic = vertwall[tilehit&63];
 
+#ifdef WOLF3D_NATIVE
+		postpage = (byte *)PM_GetPage(wallpic);
+		posttexture = texture;
+#else
+#ifdef WOLF3D_NATIVE
+		postpage = (byte *)PM_GetPage(wallpic);
+		posttexture = texture;
+#else
 		*( ((unsigned *)&postsource)+1) = (unsigned)PM_GetPage(wallpic);
 		(unsigned)postsource = texture;
+#endif
+#endif
 	}
 
 }
