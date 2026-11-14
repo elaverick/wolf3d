@@ -1,20 +1,15 @@
 /*
- * End-to-end smoke test for the software VGA and SDL3 presentation path.
+ * End-to-end smoke test for the portable VL API and SDL3 presentation path.
  *
- * This intentionally exercises the same legacy video context that the game
- * will use, without depending on the still-unported game loop.
+ * This exercises the compatibility functions that the original game code
+ * expects, without depending on the still-unported game loop.
  */
 
-#include "legacy_video.h"
+#include "legacy_vl.h"
 #include "platform.h"
 
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
-
-static uint8_t vga_storage[
-    WOLF_VGA_LEGACY_PLANE_SIZE * WOLF_VGA_PLANE_COUNT];
-static uint8_t framebuffer_storage[320 * 200];
 
 static bool present_to_platform(
     const uint8_t *pixels,
@@ -28,32 +23,31 @@ static bool present_to_platform(
         platform, pixels, pitch, palette);
 }
 
-static void draw_test_scene(WolfLegacyVideo *video)
+static void draw_test_scene(void)
 {
     uint8_t wall_column[64];
     int index;
 
     for (index = 0; index < 256; ++index) {
-        wolf_legacy_video_set_color(
-            video,
+        VL_SetColor(
             index,
             index & 63,
             (index * 3) & 63,
             (index * 5) & 63);
     }
 
-    wolf_legacy_video_clear(video, 0);
-    wolf_legacy_video_fill_rect(video, 0, 0, 320, 200, 4);
-    wolf_legacy_video_fill_rect(video, 16, 16, 288, 168, 12);
-    wolf_legacy_video_fill_rect(video, 32, 32, 256, 136, 3);
-    wolf_legacy_video_fill_rect(video, 40, 40, 240, 120, 7);
+    VL_ClearVideo(0);
+    VL_Bar(0, 0, 320, 200, 4);
+    VL_Bar(16, 16, 288, 168, 12);
+    VL_Bar(32, 32, 256, 136, 3);
+    VL_Bar(40, 40, 240, 120, 7);
 
     for (index = 0; index < 64; ++index) {
         wall_column[index] = (uint8_t)(32 + ((index * 3) & 31));
     }
 
-    wolf_legacy_video_scale_post(
-        video,
+    (void)wolf_legacy_video_scale_post(
+        VL_GetVideo(),
         136,
         0,
         200,
@@ -63,7 +57,7 @@ static void draw_test_scene(WolfLegacyVideo *video)
         64,
         144);
 
-    wolf_legacy_video_fill_rect(video, 24, 176, 272, 8, 63);
+    VL_Bar(24, 176, 272, 8, 63);
 }
 
 int main(void)
@@ -76,7 +70,6 @@ int main(void)
         200
     };
     WolfPlatform *platform;
-    WolfLegacyVideo video;
 
     platform = wolf_platform_create(&config);
     if (platform == NULL) {
@@ -84,29 +77,17 @@ int main(void)
         return 1;
     }
 
-    if (!wolf_legacy_video_init(
-            &video,
-            vga_storage,
-            sizeof(vga_storage),
-            framebuffer_storage,
-            sizeof(framebuffer_storage),
-            320)) {
-        fputs("Unable to initialise software VGA memory.\n", stderr);
-        wolf_platform_destroy(platform);
-        return 1;
-    }
-
+    VL_Startup();
     wolf_legacy_video_set_present_callback(
-        &video, present_to_platform, platform);
-    wolf_legacy_video_set_draw_page(
-        &video, WOLF_VGA_LEGACY_PAGE1_OFFSET);
-    wolf_legacy_video_set_display_page(
-        &video, WOLF_VGA_LEGACY_PAGE1_OFFSET);
+        VL_GetVideo(), present_to_platform, platform);
+    VL_SetLineWidth(40);
+    VL_SetScreen((int)WOLF_VGA_LEGACY_PAGE1_OFFSET, 0);
+    bufferofs = WOLF_VGA_LEGACY_PAGE1_OFFSET;
 
-    draw_test_scene(&video);
+    draw_test_scene();
 
     while (wolf_platform_pump_events(platform)) {
-        if (!wolf_legacy_video_present(&video)) {
+        if (!VL_Present()) {
             fputs("Unable to present software VGA frame.\n", stderr);
             break;
         }
@@ -114,6 +95,7 @@ int main(void)
         wolf_platform_delay_ms(16);
     }
 
+    VL_Shutdown();
     wolf_platform_destroy(platform);
     return 0;
 }
