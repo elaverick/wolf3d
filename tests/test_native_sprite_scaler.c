@@ -194,6 +194,41 @@ static void test_fractional_scale_matches_compiled_width_table(void)
     assert(framebuffer_pixels[63u * 320u + 162u] == 43);
 }
 
+static void test_right_only_sprite_uses_original_anchor(void)
+{
+    uint8_t shape[TEST_SHAPE_SIZE];
+
+    memset(shape, 0, sizeof(shape));
+    write_u16_le(shape, 40);
+    write_u16_le(shape + 2, 41);
+    write_u16_le(shape + 4, POSTS_SLOT_0);
+    write_u16_le(shape + 6, POSTS_SLOT_1);
+
+    shape[132] = 17;
+    shape[133] = 29;
+
+    /* Single visible source row in the first right-side columns. */
+    write_u16_le(shape + POSTS_SLOT_0, 2);
+    write_u16_le(shape + POSTS_SLOT_0 + 2, 132);
+    write_u16_le(shape + POSTS_SLOT_0 + 4, 0);
+    write_u16_le(shape + POSTS_SLOT_0 + 6, 0);
+
+    write_u16_le(shape + POSTS_SLOT_1, 2);
+    write_u16_le(shape + POSTS_SLOT_1 + 2, 133);
+    write_u16_le(shape + POSTS_SLOT_1 + 4, 0);
+    write_u16_le(shape + POSTS_SLOT_1 + 6, 0);
+
+    clear_video();
+    assert(wolf_native_sprite_scale(
+        &video, shape, sizeof(shape), 160, 320, 200, 64, NULL, 64));
+    present_video();
+
+    /* With leftpix=40, the legacy right-side walk anchors x=40 at xcenter. */
+    assert(framebuffer_pixels[68u * 320u + 160u] == 17);
+    assert(framebuffer_pixels[68u * 320u + 161u] == 29);
+    assert(framebuffer_pixels[68u * 320u + 168u] == 0);
+}
+
 static void test_wall_occlusion(void)
 {
     uint8_t shape[TEST_SHAPE_SIZE];
@@ -270,6 +305,7 @@ int main(void)
 
     test_centre_out_offsets_and_multiple_posts();
     test_fractional_scale_matches_compiled_width_table();
+    test_right_only_sprite_uses_original_anchor();
     test_wall_occlusion();
     test_horizontal_and_vertical_clipping();
     test_rejects_malformed_shape_data();

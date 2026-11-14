@@ -58,6 +58,8 @@ bool wolf_native_sprite_scale(
     size_t previous_offset = 0;
     unsigned slot;
     int sprite_half_height;
+    unsigned horizontal_anchor_x;
+    int64_t horizontal_anchor_offset;
     int top;
     unsigned source_x;
 
@@ -101,6 +103,16 @@ bool wolf_native_sprite_scale(
     sprite_half_height = destination_height / 2;
     top = view_height / 2 - sprite_half_height;
 
+    /*
+     * The original scaler normally anchors source column 32 at x_center.
+     * When the sprite begins at or to the right of column 31, its right-side
+     * walk starts at left_pixel and anchors that first visible column instead.
+     */
+    horizontal_anchor_x = left_pixel < 31u ? 32u : left_pixel;
+    horizontal_anchor_offset =
+        ((int64_t)horizontal_anchor_x * destination_height) /
+            (int64_t)SPRITE_SOURCE_SIZE;
+
     for (source_x = left_pixel; source_x <= right_pixel; ++source_x) {
         unsigned column_index = column_slot(source_x, left_pixel);
         size_t column_offset;
@@ -127,10 +139,10 @@ bool wolf_native_sprite_scale(
             return false;
         }
 
-        left_edge = (int64_t)x_center - sprite_half_height +
+        left_edge = (int64_t)x_center - horizontal_anchor_offset +
             ((int64_t)source_x * destination_height) /
                 (int64_t)SPRITE_SOURCE_SIZE;
-        right_edge = (int64_t)x_center - sprite_half_height +
+        right_edge = (int64_t)x_center - horizontal_anchor_offset +
             ((int64_t)(source_x + 1u) * destination_height) /
                 (int64_t)SPRITE_SOURCE_SIZE;
 
