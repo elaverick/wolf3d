@@ -58,7 +58,9 @@ static void reset_ray_state(void)
 {
     memset(tilemap, 0, sizeof(tilemap));
     memset(spotvis, 0, sizeof(spotvis));
+    memset(doorposition, 0, sizeof(doorposition));
     memset(pixelangle, 0, sizeof(pixelangle));
+    pwallpos = 0;
 
     midangle = 0;
     focaltx = 10;
@@ -128,11 +130,33 @@ static void test_ray_stops_at_map_boundary(void)
     assert(pixx == 1);
 }
 
-static void test_vertical_special_tile_dispatch(void)
+static void prepare_vertical_special_ray(void)
 {
     reset_ray_state();
     set_uniform_ray_tangent(65536);
-    midangle = 450;
+    finetangent[599] = 113512; /* tan(60 degrees), x step at ray angle 300. */
+    finetangent[300] = 37837;  /* tan(30 degrees), y step at ray angle 300. */
+    midangle = 300;
+    viewy = (fixed)(10 * TILEGLOBAL + 58982); /* 0.9 tile */
+    xpartialup = 32768;
+    ypartialdown = 58982;
+}
+
+static void prepare_horizontal_special_ray(void)
+{
+    reset_ray_state();
+    set_uniform_ray_tangent(65536);
+    finetangent[399] = 54991; /* tan(40 degrees), x step at ray angle 500. */
+    finetangent[500] = 78123; /* tan(50 degrees), y step at ray angle 500. */
+    midangle = 500;
+    viewx = (fixed)(10 * TILEGLOBAL + 6554);  /* 0.1 tile */
+    xpartialup = 58982;                      /* 0.9 tile to the next x grid */
+    ypartialdown = 32768;
+}
+
+static void test_vertical_special_tile_dispatch(void)
+{
+    prepare_vertical_special_ray();
     tilemap[11][10] = (byte)(0x80u | 5u);
     doorposition[5] = 0;
 
@@ -143,9 +167,7 @@ static void test_vertical_special_tile_dispatch(void)
     assert(horizontal_door_hits == 0);
     assert(horizontal_pushwall_hits == 0);
 
-    reset_ray_state();
-    set_uniform_ray_tangent(65536);
-    midangle = 450;
+    prepare_vertical_special_ray();
     tilemap[11][10] = (byte)(0xc0u | 5u);
     pwallpos = 0;
 
@@ -159,9 +181,7 @@ static void test_vertical_special_tile_dispatch(void)
 
 static void test_horizontal_special_tile_dispatch(void)
 {
-    reset_ray_state();
-    set_uniform_ray_tangent(32768);
-    midangle = 450;
+    prepare_horizontal_special_ray();
     tilemap[10][9] = (byte)(0x80u | 5u);
     doorposition[5] = 0;
 
@@ -172,9 +192,7 @@ static void test_horizontal_special_tile_dispatch(void)
     assert(vertical_door_hits == 0);
     assert(vertical_pushwall_hits == 0);
 
-    reset_ray_state();
-    set_uniform_ray_tangent(32768);
-    midangle = 450;
+    prepare_horizontal_special_ray();
     tilemap[10][9] = (byte)(0xc0u | 5u);
     pwallpos = 0;
 
@@ -188,9 +206,7 @@ static void test_horizontal_special_tile_dispatch(void)
 
 static void test_open_door_allows_ray_to_reach_next_wall(void)
 {
-    reset_ray_state();
-    set_uniform_ray_tangent(65536);
-    midangle = 450;
+    prepare_vertical_special_ray();
 
     tilemap[11][10] = (byte)(0x80u | 5u);
     doorposition[5] = 0xffffu;

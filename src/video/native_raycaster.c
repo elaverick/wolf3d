@@ -102,8 +102,16 @@ static bool trace_vertical_tile(void)
 
     tilehit = tilemap[xtile][y_coordinate];
     if (tilehit != 0) {
-        ytile = y_coordinate;
-        xintercept = (fixed)((int64_t)xtile * TILEGLOBAL);
+        /*
+         * Ordinary walls terminate the ray and need both intercepts snapped
+         * to their grid planes. Doors and pushwalls are different: the legacy
+         * assembly leaves the other axis' tile/intercept untouched so a ray
+         * can pass the moving plane and continue through that same cell.
+         */
+        if ((tilehit & 0x80u) == 0) {
+            ytile = y_coordinate;
+            xintercept = (fixed)((int64_t)xtile * TILEGLOBAL);
+        }
         return true;
     }
 
@@ -124,8 +132,10 @@ static bool trace_horizontal_tile(void)
 
     tilehit = tilemap[x_coordinate][ytile];
     if (tilehit != 0) {
-        xtile = x_coordinate;
-        yintercept = (fixed)((int64_t)ytile * TILEGLOBAL);
+        if ((tilehit & 0x80u) == 0) {
+            xtile = x_coordinate;
+            yintercept = (fixed)((int64_t)ytile * TILEGLOBAL);
+        }
         return true;
     }
 
@@ -275,7 +285,15 @@ void AsmRefresh(void)
         xtile = focaltx + xtilestep;
         ytile = focalty + ytilestep;
 
-        for (;;) {
+        /*
+         * A ray can cross at most MAPSIZE vertical and MAPSIZE horizontal
+         * cell boundaries. Bound the loop so a malformed map or regression in
+         * a special-tile transition cannot hang the whole native game.
+         */
+        {
+            unsigned trace_steps;
+            for (trace_steps = 0; trace_steps < (unsigned)MAPSIZE * 2u;
+                 ++trace_steps) {
             int y_coordinate = fixed_tile(yintercept);
             int x_coordinate = fixed_tile(xintercept);
 
@@ -311,6 +329,7 @@ void AsmRefresh(void)
                 continue;
             }
             break;
+            }
         }
     }
 }
