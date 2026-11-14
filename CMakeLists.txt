@@ -171,6 +171,27 @@ if(BUILD_TESTING)
     endif()
 
     add_test(NAME native_input COMMAND test_native_input)
+
+    add_executable(test_native_raycaster
+        tests/test_native_raycaster.c
+        src/video/native_raycaster.c
+    )
+
+    target_include_directories(test_native_raycaster
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/WOLFSRC
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/video
+    )
+
+    target_compile_definitions(test_native_raycaster PRIVATE WOLF3D_NATIVE)
+
+    if(MSVC)
+        target_compile_options(test_native_raycaster PRIVATE /W4 /WX)
+    else()
+        target_compile_options(test_native_raycaster PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+
+    add_test(NAME native_raycaster COMMAND test_native_raycaster)
 endif()
 
 if(WOLF3D_BUILD_LEGACY_GAME_OBJECTS)
