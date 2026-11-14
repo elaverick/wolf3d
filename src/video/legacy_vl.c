@@ -9,6 +9,7 @@ unsigned bufferofs;
 unsigned displayofs;
 unsigned pelpan;
 unsigned linewidth;
+unsigned screenseg;
 unsigned ylookup[200];
 bool screenfaded;
 unsigned bordercolor;
@@ -55,6 +56,7 @@ static void update_video_globals(void)
     bufferofs = (unsigned)active_video->draw_page_offset;
     displayofs = (unsigned)active_video->display_page_offset;
     linewidth = WOLF_VGA_LEGACY_STRIDE_BYTES;
+    screenseg = 0;
 
     for (row = 0; row < 200; ++row) {
         ylookup[row] = row * linewidth;
