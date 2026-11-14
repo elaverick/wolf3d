@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+void AsmRefresh(void);
+
 int midangle;
 int focaltx;
 int focalty;
