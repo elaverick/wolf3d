@@ -70,6 +70,7 @@ void VL_MemToLatch(uint8_t *source, int width, int height, unsigned destination)
 void VL_ScreenToScreen(unsigned source, unsigned destination, int width, int height);
 void VL_LatchToScreen(
     unsigned source, int width_bytes, int height, int x, int y);
+void VL_ScreenToScreen(unsigned source, unsigned destination, int width_bytes, int height);
 void VL_MemToScreen(
     uint8_t *source, int width, int height, int x, int y);
 void VL_MaskedToScreen(
