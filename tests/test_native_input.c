@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 
+byte *audiosegs[NUMSNDCHUNKS];
+
 static boolean fake_keys[NumCodes];
 static int fake_pending_scan;
 static int fake_pending_ascii;
