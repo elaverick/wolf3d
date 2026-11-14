@@ -140,7 +140,7 @@ static bool process_vertical_special(void)
     unsigned door_number;
     fixed midpoint;
 
-    if ((tilehit & 0x40u) != 0) {
+    if ((tilehit & 0x40u) == 0) {
         fixed partial_step;
 
         partial_step = (fixed)(multiply_fixed_by_fraction(
@@ -186,7 +186,7 @@ static bool process_horizontal_special(void)
     unsigned door_number;
     fixed midpoint;
 
-    if ((tilehit & 0x40u) != 0) {
+    if ((tilehit & 0x40u) == 0) {
         fixed partial_step = (fixed)(
             multiply_fixed_by_fraction(xstep, 0x8000u));
 
