@@ -63,38 +63,38 @@ CP_itemtype far
 MainMenu[]=
 {
 #ifdef JAPAN
-	{1,"",CP_NewGame},
-	{1,"",CP_Sound},
-	{1,"",CP_Control},
-	{1,"",CP_LoadGame},
-	{0,"",CP_SaveGame},
-	{1,"",CP_ChangeView},
-	{2,"",CP_ReadThis},
-	{1,"",CP_ViewScores},
+	{1,"",CP_ROUTINE(CP_NewGame)},
+	{1,"",CP_ROUTINE(CP_Sound)},
+	{1,"",CP_ROUTINE(CP_Control)},
+	{1,"",CP_ROUTINE(CP_LoadGame)},
+	{0,"",CP_ROUTINE(CP_SaveGame)},
+	{1,"",CP_ROUTINE(CP_ChangeView)},
+	{2,"",CP_ROUTINE(CP_ReadThis)},
+	{1,"",CP_ROUTINE(CP_ViewScores)},
 	{1,"",0},
 	{1,"",0}
 #else
 
-	{1,STR_NG,CP_NewGame},
-	{1,STR_SD,CP_Sound},
-	{1,STR_CL,CP_Control},
-	{1,STR_LG,CP_LoadGame},
-	{0,STR_SG,CP_SaveGame},
-	{1,STR_CV,CP_ChangeView},
+	{1,STR_NG,CP_ROUTINE(CP_NewGame)},
+	{1,STR_SD,CP_ROUTINE(CP_Sound)},
+	{1,STR_CL,CP_ROUTINE(CP_Control)},
+	{1,STR_LG,CP_ROUTINE(CP_LoadGame)},
+	{0,STR_SG,CP_ROUTINE(CP_SaveGame)},
+	{1,STR_CV,CP_ROUTINE(CP_ChangeView)},
 
 #ifndef GOODTIMES
 #ifndef SPEAR
 
 	#ifdef SPANISH
-	{2,"Ve esto!",CP_ReadThis},
+	{2,"Ve esto!",CP_ROUTINE(CP_ReadThis)},
 	#else
-	{2,"Read This!",CP_ReadThis},
+	{2,"Read This!",CP_ROUTINE(CP_ReadThis)},
 	#endif
 
 #endif
 #endif
 
-	{1,STR_VS,CP_ViewScores},
+	{1,STR_VS,CP_ROUTINE(CP_ViewScores)},
 	{1,STR_BD,0},
 	{1,STR_QT,0}
 #endif
@@ -138,15 +138,15 @@ far CtlMenu[]=
 	{0,"",0},
 	{0,"",0},
 	{0,"",0},
-	{0,"",MouseSensitivity},
-	{1,"",CustomControls}
+	{0,"",CP_ROUTINE(MouseSensitivity)},
+	{1,"",CP_ROUTINE(CustomControls)}
 #else
 	{0,STR_MOUSEEN,0},
 	{0,STR_JOYEN,0},
 	{0,STR_PORT2,0},
 	{0,STR_GAMEPAD,0},
-	{0,STR_SENS,MouseSensitivity},
-	{1,STR_CUSTOM,CustomControls}
+	{0,STR_SENS,CP_ROUTINE(MouseSensitivity)},
+	{1,STR_CUSTOM,CP_ROUTINE(CustomControls)}
 #endif
 },
 
@@ -875,7 +875,7 @@ int CP_EndGame(void)
 
 	#pragma warn -sus
 	MainMenu[savegame].active = 0;
-	MainMenu[viewscores].routine=CP_ViewScores;
+	MainMenu[viewscores].routine=CP_ROUTINE(CP_ViewScores);
 	#ifndef JAPAN
 	_fstrcpy(MainMenu[viewscores].string,STR_VS);
 	#endif
@@ -3769,7 +3769,7 @@ void StartCPMusic(int song)
 	musicnames	chunk;
 
 	if (audiosegs[STARTMUSIC + lastmusic])	// JDC
-		MM_FreePtr (&audiosegs[STARTMUSIC + lastmusic]);
+		MM_FreePtr ((memptr *)&audiosegs[STARTMUSIC + lastmusic]);
 	lastmusic = song;
 
 	SD_MusicOff();
@@ -3782,7 +3782,7 @@ void StartCPMusic(int song)
 		mmerror = false;
 	else
 	{
-		MM_SetLock(&audiosegs[STARTMUSIC + chunk],true);
+		MM_SetLock((memptr *)&audiosegs[STARTMUSIC + chunk],true);
 		SD_StartMusic((MusicGroup far *)audiosegs[STARTMUSIC + chunk]);
 	}
 }
