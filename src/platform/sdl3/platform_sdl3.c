@@ -90,9 +90,7 @@ WolfPlatform *wolf_platform_create(const WolfPlatformConfig *config)
         return NULL;
     }
 
-    SDL_SetMainReady();
-
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER)) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
         free(platform->rgba_pixels);
         free(platform);
         return NULL;
