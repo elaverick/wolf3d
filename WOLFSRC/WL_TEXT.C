@@ -355,7 +355,7 @@ void HandleWord (void)
 {
 	char		word_buffer[WORDLIMIT];
 	int			i,wordindex;
-	unsigned short	wwidth,wheight;
+	word		wwidth,wheight;
 	unsigned	newpos;
 
 
